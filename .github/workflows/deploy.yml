@@ -1,0 +1,52 @@
+# 每天自动拉取 PADDashFormation 最新代码和怪物数据，叠加本仓库的功能后发布到 GitHub Pages
+name: 构建并发布
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 14 * * *" # 每天 UTC 14:23（上游通常在 UTC 13:00 左右更新数据）
+  workflow_dispatch: # 允许在 Actions 页面手动运行
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 拉取上游 PADDashFormation
+        run: git clone --depth 1 https://github.com/Mapaler/PADDashFormation.git upstream
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 构建网站
+        run: |
+          ./build.sh upstream site
+          echo "上游版本：$(git -C upstream log -1 --format='%ci %s')"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

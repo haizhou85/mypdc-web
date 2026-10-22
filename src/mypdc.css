@@ -1,0 +1,183 @@
+@charset "utf-8";
+/* 我的 PDC：自定义功能样式 */
+:root {
+	--mypdc-bg: #fff;
+	--mypdc-fg: #222;
+	--mypdc-line: #ccc;
+	--mypdc-soft: #f4f4f6;
+	--mypdc-accent: #c05;
+	--mypdc-ok: #1a7f37;
+	--mypdc-dead: #c62828;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--mypdc-bg: #1e1e22;
+		--mypdc-fg: #e6e6e6;
+		--mypdc-line: #444;
+		--mypdc-soft: #2a2a30;
+		--mypdc-accent: #ff5c93;
+		--mypdc-ok: #4caf50;
+		--mypdc-dead: #ff6b6b;
+	}
+}
+
+/* 排序条件 */
+.mypdc-sort-cfg {
+	margin: 4px 0;
+	padding: 4px 8px;
+	border: 1px dashed var(--mypdc-line);
+	border-radius: 6px;
+	font-size: 0.9em;
+}
+.mypdc-sort-cfg summary { cursor: pointer; font-weight: bold; }
+.mypdc-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 14px;
+	align-items: center;
+	margin: 4px 0;
+}
+.mypdc-row label { white-space: nowrap; }
+.mypdc-hint { color: #888; font-size: 0.85em; margin: 4px 0; }
+.mypdc-warn { color: var(--mypdc-dead); margin: 6px 0; }
+
+.search-mon-list > * { position: relative; }
+.mypdc-sortval {
+	position: absolute;
+	left: 0; right: 0; bottom: 0;
+	background: rgba(0, 0, 0, 0.72);
+	color: #fff;
+	font-size: 11px;
+	line-height: 14px;
+	text-align: center;
+	pointer-events: none;
+	z-index: 2;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+/* 减伤模拟面板 */
+.mypdc-open-btn {
+	position: fixed;
+	right: 16px;
+	bottom: 16px;
+	z-index: 900;
+	padding: 10px 16px;
+	font-size: 15px;
+	border: none;
+	border-radius: 22px;
+	background: var(--mypdc-accent);
+	color: #fff;
+	box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+	cursor: pointer;
+}
+body.mypdc-panel-open { overflow: hidden; }
+body.mypdc-panel-open .mypdc-open-btn { display: none; }
+.mypdc-panel {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+	background: var(--mypdc-bg);
+	color: var(--mypdc-fg);
+	display: flex;
+	flex-direction: column;
+	font-size: 14px;
+}
+.mypdc-panel.display-none { display: none; }
+.mypdc-panel-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 16px;
+	border-bottom: 1px solid var(--mypdc-line);
+}
+.mypdc-panel-head h2 { margin: 0; font-size: 18px; }
+.mypdc-panel-body {
+	flex: 1;
+	overflow: auto;
+	padding: 8px 16px 40px;
+}
+.mypdc-box {
+	border: 1px solid var(--mypdc-line);
+	border-radius: 8px;
+	padding: 8px 10px;
+	margin: 8px 0;
+	background: var(--mypdc-bg);
+}
+.mypdc-panel input, .mypdc-panel select, .mypdc-panel textarea, .mypdc-panel button {
+	font-size: 14px;
+	color: inherit;
+	background: var(--mypdc-soft);
+	border: 1px solid var(--mypdc-line);
+	border-radius: 4px;
+	padding: 2px 4px;
+}
+.mypdc-panel button { cursor: pointer; padding: 3px 10px; }
+.mypdc-panel input:disabled, .mypdc-panel select:disabled { opacity: 0.85; }
+.mypdc-note { width: 100%; box-sizing: border-box; margin-top: 4px; resize: vertical; }
+.mypdc-summary span { font-weight: bold; }
+
+.mypdc-table-wrap { overflow-x: auto; }
+.mypdc-table { border-collapse: collapse; margin: 4px 0; }
+.mypdc-table th, .mypdc-table td {
+	border: 1px solid var(--mypdc-line);
+	padding: 3px 6px;
+	text-align: center;
+	white-space: nowrap;
+}
+.mypdc-table th { background: var(--mypdc-soft); font-weight: normal; }
+.mypdc-ok { color: var(--mypdc-ok); font-weight: bold; }
+.mypdc-dead { color: var(--mypdc-dead); font-weight: bold; }
+.mypdc-row-dead { background: rgba(255, 80, 80, 0.08); }
+.mypdc-enemy-name { font-size: 11px; color: #888; max-width: 8em; overflow: hidden; text-overflow: ellipsis; }
+
+.mypdc-attr { font-weight: bold; }
+.mypdc-attr-0 { color: #e53935; }
+.mypdc-attr-1 { color: #1e88e5; }
+.mypdc-attr-2 { color: #43a047; }
+.mypdc-attr-3 { color: #d4a000; }
+.mypdc-attr-4 { color: #8e24aa; }
+select.mypdc-attr-sel { font-weight: bold; }
+
+@media (max-width: 600px) {
+	.mypdc-panel-body { padding: 6px 8px 40px; }
+	.mypdc-panel { font-size: 13px; }
+}
+
+/* 手机：每条攻击显示成卡片 */
+@media (max-width: 760px) {
+	.mypdc-attack-table, .mypdc-attack-table tbody { display: block; }
+	.mypdc-attack-table tr:first-child { display: none; }
+	.mypdc-attack-table tr {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 4px 8px;
+		padding: 8px;
+		margin-bottom: 8px;
+		border: 1px solid var(--mypdc-line);
+		border-radius: 8px;
+	}
+	.mypdc-attack-table td {
+		display: block;
+		border: none;
+		padding: 0;
+		text-align: left;
+		white-space: normal;
+		min-width: 0;
+	}
+	.mypdc-attack-table td::before {
+		content: attr(data-label);
+		display: block;
+		font-size: 11px;
+		color: #888;
+	}
+	.mypdc-attack-table td:last-child::before { content: none; }
+	.mypdc-attack-table td input, .mypdc-attack-table td select {
+		width: 100% !important;
+		box-sizing: border-box;
+	}
+	.mypdc-attack-table td:nth-child(10), .mypdc-attack-table td:nth-child(11) { font-weight: bold; }
+}
+
+/* 编辑宠物窗口打开时隐藏减伤按钮，避免挡住“确认修改” */
+body:has(.edit-box:not(.display-none)) .mypdc-open-btn { display: none; }
