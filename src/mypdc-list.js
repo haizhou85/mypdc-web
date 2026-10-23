@@ -46,6 +46,9 @@
 			['固伤', ['主动技', '对敌直接伤害类-固伤', '任意']],
 			['全体大炮', ['主动技', '对敌直接伤害类-大炮', '对象', '对象-敌方全体']],
 		]],
+		['破白盾', [
+			['任意', 'custom:shield-any'],
+		]],
 		['变敌属性', [
 			['任意', 'custom:enemy-attr-any'],
 			['敌→火', 'custom:enemy-attr-0', 0],
@@ -112,7 +115,25 @@
 		return set;
 	}
 
+	// 破白盾：技能能破坏的白盾数（0.5 / 1 / 2 / 3），没有则 0
+	const shieldCache = new Map();
+	function shieldOf(card) {
+		if (!skillsReady() || !card.activeSkillId) return 0;
+		if (shieldCache.has(card.id)) return shieldCache.get(card.id);
+		let best = 0;
+		const walk = n => {
+			if (Array.isArray(n)) { n.forEach(walk); return; }
+			if (!n || typeof n !== 'object') return;
+			if (n.kind === SkillKinds.BreakingShield) best = Math.max(best, Number(n.value?.value) || 0);
+			for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v);
+		};
+		try { walk(skillParser(card.activeSkillId)); } catch (e) { /* 忽略 */ }
+		shieldCache.set(card.id, best);
+		return best;
+	}
+
 	const CUSTOM_FILTERS = {
+		'shield-any': cards => cards.filter(c => shieldOf(c) > 0),
 		'maxhp-up': cards => cards.filter(c => { const sk = activeSkillOf(c, [237]); return sk && sk.params[1] > 100; }),
 		'enemy-attr-any': cards => cards.filter(c => enemyAttrOf(c) !== null),
 	};
@@ -129,7 +150,7 @@
 		return typeof node.function === 'function' ? node.function : null;
 	}
 
-	const fstate = Object.assign({ chips: [], mode: 'and', maxCd: 0, turnsKind: '', minTurns: 0, impartAw: [], impartMode: 'and', impartAny: false }, load('skill-filter', {}));
+	const fstate = Object.assign({ chips: [], mode: 'and', maxCd: 0, turnsKind: '', minTurns: 0, impartAw: [], impartMode: 'and', impartAny: false, shieldCount: 0, shieldCmp: 'ge' }, load('skill-filter', {}));
 
 	// ---------- 技能持续回合 ----------
 	const K = typeof SkillKinds === 'object' ? SkillKinds : {};
@@ -198,6 +219,15 @@
 		let result = cards;
 		if (fstate.maxCd > 0) result = result.filter(c => minCd(c) <= fstate.maxCd);
 		if (fstate.minTurns > 0) result = result.filter(c => maxTurns(c) >= fstate.minTurns);
+		// 破白盾的破坏数
+		if (fstate.shieldCount > 0) {
+			const n = fstate.shieldCount, cmp = fstate.shieldCmp;
+			result = result.filter(c => {
+				const v = shieldOf(c);
+				if (!v) return false;
+				return cmp === 'le' ? v <= n : cmp === 'eq' ? v === n : v >= n;
+			});
+		}
 		// 觉醒赋予（武器技能）
 		if (fstate.impartAny || fstate.impartAw.length) {
 			const impartOf = MyPDC.impart?.impartOf;
@@ -240,7 +270,9 @@
 		const chipButtons = [];
 		const refresh = () => {
 			chipButtons.forEach(b => b.classList.toggle('on', fstate.chips.includes(b.dataset.key)));
-			const n = fstate.chips.length + (fstate.maxCd > 0 ? 1 : 0) + (fstate.minTurns > 0 ? 1 : 0) + fstate.impartAw.length + (fstate.impartAny ? 1 : 0);
+			const n = fstate.chips.length + (fstate.maxCd > 0 ? 1 : 0) + (fstate.minTurns > 0 ? 1 : 0) + fstate.impartAw.length + (fstate.impartAny ? 1 : 0) + (fstate.shieldCount > 0 ? 1 : 0);
+			shieldCountSel.value = String(fstate.shieldCount);
+			shieldCmpSel.value = fstate.shieldCmp;
 			fillImpart();
 			impartIcons.forEach(i => i.classList.toggle('on', fstate.impartAw.includes(+i.dataset.awokenIcon)));
 			impartAnyBox.checked = fstate.impartAny;
@@ -267,6 +299,14 @@
 		});
 		// 去掉已失效的选项
 		fstate.chips = fstate.chips.filter(k => chipIndex.has(k));
+
+		// 破白盾：破坏数 + 以上/以下/仅
+		const shieldCountSel = el('select', { onchange: e => { fstate.shieldCount = Number(e.target.value) || 0; saveF(); refresh(); runSearch(); } },
+			[[0, '破坏数不限'], [0.5, '0.5个'], [1, '1个'], [2, '2个'], [3, '3个']].map(([v, t]) => el('option', { value: v }, t)));
+		const shieldCmpSel = el('select', { onchange: e => { fstate.shieldCmp = e.target.value; saveF(); if (fstate.shieldCount) runSearch(); } },
+			el('option', { value: 'ge' }, '以上'), el('option', { value: 'le' }, '以下'), el('option', { value: 'eq' }, '仅'));
+		const shieldRow = groups.find(g => g?.firstChild?.textContent === '破白盾');
+		shieldRow?.append(shieldCountSel, shieldCmpSel);
 
 		const awName = a => {
 			try { return localTranslating.skill_parse.awokens[a]({ icon: '' }).textContent.trim(); } catch (e) { return ''; }
@@ -339,7 +379,7 @@
 		refresh();
 
 		function resetState() {
-			Object.assign(fstate, { chips: [], maxCd: 0, mode: 'and', turnsKind: '', minTurns: 0, impartAw: [], impartMode: 'and', impartAny: false }); saveF();
+			Object.assign(fstate, { chips: [], maxCd: 0, mode: 'and', turnsKind: '', minTurns: 0, impartAw: [], impartMode: 'and', impartAny: false, shieldCount: 0, shieldCmp: 'ge' }); saveF();
 			panel.querySelectorAll('input[type=number]').forEach(i => { i.value = ''; });
 			panel.querySelector('select').value = 'and';
 			panel.querySelector('.mypdc-turns-kind').value = '';
@@ -513,7 +553,7 @@
 		return o.attrs.every(a => !a) && !o.types.length && !o.rares.length && !o.awokens.length && !o.sawokens.length &&
 			!o.canAssist && !o.canLv110 && !o.is8Latent && !o.notWeapon &&
 			o.specialFilters.every(f => !f || f.every(n => !n)) &&
-			!fstate.chips.length && !fstate.maxCd && !fstate.minTurns && !fstate.impartAw.length && !fstate.impartAny;
+			!fstate.chips.length && !fstate.maxCd && !fstate.minTurns && !fstate.impartAw.length && !fstate.impartAny && !fstate.shieldCount;
 	}
 	let searchTimer = null;
 	function autoSearch() {
