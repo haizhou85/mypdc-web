@@ -191,6 +191,14 @@
 		panel.addEventListener('toggle', () => save('skill-filter-open', panel.open));
 		anchor.before(panel);
 		refresh();
+
+		// 上游“清空搜索”也清除这里的技能条件（之后会自动重新搜索）
+		document.querySelector('.search-box .search-clear')?.addEventListener('click', () => {
+			fstate.chips = []; fstate.maxCd = 0; fstate.mode = 'and'; saveF();
+			panel.querySelector('input[type=number]').value = '';
+			panel.querySelector('select').value = 'and';
+			refresh();
+		});
 	}
 
 	// ---------------- 列表显示 ----------------
