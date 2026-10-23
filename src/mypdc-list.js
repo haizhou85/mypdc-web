@@ -108,7 +108,61 @@
 		return typeof node.function === 'function' ? node.function : null;
 	}
 
-	const fstate = Object.assign({ chips: [], mode: 'and', maxCd: 0 }, load('skill-filter', {}));
+	const fstate = Object.assign({ chips: [], mode: 'and', maxCd: 0, turnsKind: '', minTurns: 0 }, load('skill-filter', {}));
+
+	// ---------- 技能持续回合 ----------
+	const K = typeof SkillKinds === 'object' ? SkillKinds : {};
+	const TURN_KINDS = [
+		['', '任意效果', null],
+		['reduce', '减伤', [K.ReduceDamage]],
+		['power', '攻击/回复buff', [K.PowerUp, K.SlotPowerUp]],
+		['combo', '加C', [K.AddCombo]],
+		['time', '加秒', [K.TimeExtend]],
+		['void', '破吸', [K.VoidEnemyBuff]],
+		['cap', '伤害上限', [K.IncreaseDamageCapacity]],
+		['heal', '回合回血', [K.AutoHealBuff, K.AutoHeal]],
+		['drop', '掉落提升', [K.OrbDropIncrease]],
+		['skyfall', '无天降', [K.NoSkyfall]],
+		['counter', '反击', [K.CounterAttack]],
+		['mass', '全体攻击', [K.MassAttack]],
+		['board', '板面大小', [K.BoardSizeChange]],
+	];
+	const turnsCache = new Map();
+	// 技能里所有限时效果：[{ turns, kinds:Set }]
+	function timedEffects(card) {
+		if (turnsCache.has(card.id)) return turnsCache.get(card.id);
+		const out = [];
+		const collectKinds = (node, set) => {
+			if (Array.isArray(node)) node.forEach(n => collectKinds(n, set));
+			else if (node && typeof node === 'object') {
+				if (node.kind) set.add(node.kind);
+				for (const v of Object.values(node)) if (v && typeof v === 'object') collectKinds(v, set);
+			}
+			return set;
+		};
+		const walk = node => {
+			if (Array.isArray(node)) { node.forEach(walk); return; }
+			if (!node || typeof node !== 'object') return;
+			if (node.kind === K.ActiveTurns) {
+				const t = Array.isArray(node.turns) ? Math.max(...node.turns) : Number(node.turns);
+				if (t > 0) out.push({ turns: t, kinds: collectKinds(node.skills, new Set()) });
+			}
+			for (const v of Object.values(node)) if (v && typeof v === 'object') walk(v);
+		};
+		try { if (card.activeSkillId) walk(skillParser(card.activeSkillId)); } catch (e) { /* 解析失败当作没有 */ }
+		turnsCache.set(card.id, out);
+		return out;
+	}
+	// 指定效果类型的最长持续回合（没有则 0）
+	function maxTurns(card, kindKey = fstate.turnsKind) {
+		const kinds = TURN_KINDS.find(k => k[0] === kindKey)?.[2];
+		let best = 0;
+		for (const e of timedEffects(card)) {
+			if (kinds && !kinds.some(k => e.kinds.has(k))) continue;
+			if (e.turns > best) best = e.turns;
+		}
+		return best;
+	}
 	function saveF() { save('skill-filter', fstate); }
 
 	function minCd(card) {
@@ -120,6 +174,7 @@
 	function applySkillFilter(cards) {
 		let result = cards;
 		if (fstate.maxCd > 0) result = result.filter(c => minCd(c) <= fstate.maxCd);
+		if (fstate.minTurns > 0) result = result.filter(c => maxTurns(c) >= fstate.minTurns);
 		const fns = fstate.chips.map(key => chipIndex.get(key)?.fn).filter(Boolean);
 		if (!fns.length) return result;
 		if (fstate.mode === 'or') {
@@ -139,6 +194,7 @@
 	}
 
 	const chipIndex = new Map();
+	let clearAll = () => {};
 
 	function runSearch() { MyPDC.list.autoSearch(); }
 
@@ -149,7 +205,7 @@
 		const chipButtons = [];
 		const refresh = () => {
 			chipButtons.forEach(b => b.classList.toggle('on', fstate.chips.includes(b.dataset.key)));
-			const n = fstate.chips.length + (fstate.maxCd > 0 ? 1 : 0);
+			const n = fstate.chips.length + (fstate.maxCd > 0 ? 1 : 0) + (fstate.minTurns > 0 ? 1 : 0);
 			countLabel.textContent = n ? `（已选 ${n} 项）` : '';
 		};
 
@@ -183,7 +239,14 @@
 				el('label', null, '最短CD ≤ ',
 					el('input', { type: 'number', min: 0, max: 99, value: fstate.maxCd || '', placeholder: '不限', style: 'width:4em',
 						onchange: e => { fstate.maxCd = Math.max(0, parseInt(e.target.value, 10) || 0); saveF(); refresh(); runSearch(); } })),
-				el('button', { type: 'button', onclick: () => { fstate.chips = []; fstate.maxCd = 0; saveF(); panel.querySelector('input[type=number]').value = ''; refresh(); runSearch(); } }, '清除技能条件'),
+				el('label', { title: '技能里该效果持续的回合数' }, '持续回合 ',
+					el('select', { class: 'mypdc-turns-kind', onchange: e => { fstate.turnsKind = e.target.value; saveF(); if (fstate.minTurns) runSearch(); MyPDC.list.render(); } },
+						TURN_KINDS.map(([k, t]) => el('option', { value: k, selected: fstate.turnsKind === k }, t))),
+					' ≥ ',
+					el('input', { type: 'number', class: 'mypdc-min-turns', min: 0, max: 99, value: fstate.minTurns || '', placeholder: '不限', style: 'width:4em',
+						onchange: e => { fstate.minTurns = Math.max(0, parseInt(e.target.value, 10) || 0); saveF(); refresh(); runSearch(); } }),
+					' 回合'),
+				el('button', { type: 'button', onclick: () => clearAll() }, '清除技能条件'),
 			),
 			groups,
 			el('div', { class: 'mypdc-hint' }, '点选后自动重新搜索，可以和上面的属性、类型、觉醒条件一起用。更细的技能条件在下面的“特殊搜索”里。'),
@@ -192,13 +255,16 @@
 		anchor.before(panel);
 		refresh();
 
-		// 上游“清空搜索”也清除这里的技能条件（之后会自动重新搜索）
-		document.querySelector('.search-box .search-clear')?.addEventListener('click', () => {
-			fstate.chips = []; fstate.maxCd = 0; fstate.mode = 'and'; saveF();
-			panel.querySelector('input[type=number]').value = '';
+		function resetState() {
+			Object.assign(fstate, { chips: [], maxCd: 0, mode: 'and', turnsKind: '', minTurns: 0 }); saveF();
+			panel.querySelectorAll('input[type=number]').forEach(i => { i.value = ''; });
 			panel.querySelector('select').value = 'and';
+			panel.querySelector('.mypdc-turns-kind').value = '';
 			refresh();
-		});
+		}
+		clearAll = () => { resetState(); runSearch(); MyPDC.list.render(); };
+		// 上游“清空搜索”也清除这里的技能条件（之后会自动重新搜索）
+		document.querySelector('.search-box .search-clear')?.addEventListener('click', resetState);
 	}
 
 	// ---------------- 列表显示 ----------------
@@ -219,6 +285,7 @@
 		{ key: 'rcv', title: '回复', value: c => S.stats(c)?.rcv ?? 0 },
 		{ key: 'teamhp', title: '队伍中HP', value: c => S.teamHp(c) },
 		{ key: 'cd', title: '最短CD', value: c => minCd(c), asc: true },
+		{ key: 'turns', title: '持续', value: c => maxTurns(c) },
 		{ key: 'awoken', title: '觉醒 / 超觉醒' },
 	];
 
@@ -340,6 +407,7 @@
 				el('td', { class: 'mypdc-num' }, st ? fmt(st.rcv) : '-'),
 				el('td', { class: 'mypdc-num' }, fmt(S.teamHp(card))),
 				el('td', null, Number.isFinite(minCd(card)) ? minCd(card) : '-'),
+				el('td', { title: (TURN_KINDS.find(k => k[0] === fstate.turnsKind)?.[1] || '') + '最长持续回合' }, maxTurns(card) || '-'),
 				el('td', { class: 'mypdc-list-awoken' },
 					awokenIcons(card.awakenings, 'mypdc-aw'),
 					supers.length ? awokenIcons(supers, 'mypdc-aw mypdc-saw') : null,
@@ -363,7 +431,7 @@
 		return o.attrs.every(a => !a) && !o.types.length && !o.rares.length && !o.awokens.length && !o.sawokens.length &&
 			!o.canAssist && !o.canLv110 && !o.is8Latent && !o.notWeapon &&
 			o.specialFilters.every(f => !f || f.every(n => !n)) &&
-			!fstate.chips.length && !fstate.maxCd;
+			!fstate.chips.length && !fstate.maxCd && !fstate.minTurns;
 	}
 	let searchTimer = null;
 	function autoSearch() {

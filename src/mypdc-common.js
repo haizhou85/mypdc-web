@@ -132,6 +132,28 @@ const MyPDC = (function () {
 		document.body.classList.add('mypdc-merged-card');
 	});
 
+	// 截图：宽屏时上游会把队伍信息排成左右两栏，截图成横版；截图时改用竖向排列
+	if (typeof captureScreenshot === 'function') {
+		captureScreenshot = function (target, filename = 'capture', transparent = true) { // eslint-disable-line no-global-assign
+			statusLine?.writeText(localTranslating.status_message.prepare_capture);
+			formationBox.classList.remove('edit-code');
+			const downLink = controlBox.querySelector('.down-capture');
+			const options = {
+				onclone: doc => doc.body.classList.add('mypdc-capture'),
+			};
+			if (transparent) options.backgroundColor = null;
+			html2canvas(target, options).then(canvas => {
+				canvas.toBlob(blob => {
+					window.URL.revokeObjectURL(downLink.href);
+					downLink.href = URL.createObjectURL(blob);
+					downLink.download = `${filename}.png`;
+					downLink.click();
+					statusLine?.writeText();
+				});
+			});
+		};
+	}
+
 	return {
 		load, save, leaderIds, cardName, el, fmt, teamStats, formationStats, ATTR_NAMES,
 		onTeamUpdate: fn => listeners.push(fn),
