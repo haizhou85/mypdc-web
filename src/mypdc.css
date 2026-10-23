@@ -366,3 +366,4 @@ body.mypdc-capture .team-bigbox { display: block !important; }
 /* 队员觉醒里由武器赋予的觉醒 */
 .awoken-icon.mypdc-imparted { outline: 2px solid #ff9800; border-radius: 4px; }
 @media (max-width: 760px) { .mypdc-impart-icons { margin-left: 0; } }
+body.mypdc-listview .mypdc-list-wrap.mypdc-empty { display: none; }

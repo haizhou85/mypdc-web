@@ -451,10 +451,9 @@
 
 		const scroll = wrap.scrollTop;
 		wrap.innerHTML = '';
-		if (!heads.length) {
-			wrap.append(el('div', { class: 'mypdc-hint mypdc-list-empty' }, '没有符合条件的宠物。'));
-			return;
-		}
+		// 没有结果时整块不显示（和上游图标列表为空时一样）
+		wrap.classList.toggle('mypdc-empty', !heads.length);
+		if (!heads.length) return;
 
 		const head = el('tr', null, COLUMNS.map(c => {
 			const active = c.key === lstate.key;
