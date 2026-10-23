@@ -1,21 +1,28 @@
 'use strict';
-// 我的 PDC：按“队伍中 HP / 指定觉醒条件下 HP”排序
+// 我的 PDC：按条件计算宠物能力值（激活各种条件觉醒），用于排序和列表
 (function () {
 	const { el, load, save, leaderIds, fmt } = MyPDC;
 
 	const cfg = Object.assign({
 		level: 120,         // 按多少级计算（不能突破的按最高等级）
 		superAwoken: true,  // 计入超觉醒（自动选 HP 最高的那个）
-		selfAwoken: false,  // 视为无辅助（激活“自力觉醒”×3）
-		useLeader: true,    // 乘以当前队伍队长技的 HP 倍率（仅“队伍中HP”）
-		useTeamHp: true,    // 计入全队 HP 觉醒（仅“队伍中HP”）
+		selfAwoken: false,  // 自力（无辅助）×3
+		assistSync: false,  // 武装 / 武器同色（辅助共鸣）×3
+		coop: false,        // 协力觉醒 ×1.5（多人模式下自动计入）
+		stage: 1,           // 熟成：地下城层数 1 / 5(×1.5) / 10(×2)
+		benefit: 0,         // 加护：1=阳 2=阴 3=阴阳（HP×2 攻×5 回×2）
+		brokens: 0,         // 部位破坏个数（每个 ×1.2）
+		useLeader: true,    // “队伍中HP”乘当前队伍队长技 HP 倍率
+		useTeamHp: true,    // “队伍中HP”计入全队 HP 觉醒
 		uniformBase: 0,     // >0 时：所有宠物假定同一基础 HP，只比较觉醒倍率效果
 		teamIdx: 0,
+		listView: false,    // 搜索结果用列表显示
 	}, load('sort-cfg', {}));
 
+	const listeners = [];
 	let cache = new Map();
-	let cacheTeamStamp = '';
-	function clearCache() { cache = new Map(); }
+	let teamCache = new Map();
+	let teamCacheStamp = '';
 
 	// 生成一个“满级满加值满觉醒”的临时队员
 	function makeTempMember(card, sawoken) {
@@ -23,26 +30,12 @@
 		const stackable = card.stackable || (card.types[0] == 15 && card.types[1] == -1);
 		return {
 			id: card.id,
-			level,
+			level: cfg.level === 99 ? card.maxLevel : level,
 			plus: stackable ? [0, 0, 0] : [99, 99, 99],
 			awoken: card.awakenings.length,
 			sawoken: sawoken || 0,
 			latent: [],
 		};
-	}
-
-	// 统一基础值模式：所有宠物同一基础 HP，只体现觉醒效果
-	function uniformHp(card, awokenList) {
-		const X = cfg.uniformBase;
-		const count = id => awokenList.filter(a => a === id).length;
-		let prev = 1.1 ** count(63);
-		let flat = count(1) * (isJP ? 3000 : 2000) - count(65) * 2500;
-		let latter = 1.5 ** count(127) * 1.25 ** count(132) * 1.8 ** count(142)
-			* 1.5 ** (count(145) + count(146) + count(147));
-		if (!solo) latter *= 1.5 ** count(30);
-		if (cfg.selfAwoken) latter *= 3 ** count(139);
-		const plus = card.stackable ? 0 : 990;
-		return Math.max(1, Math.floor((Math.round(X * prev) + plus + flat) * latter));
 	}
 
 	function awokenListOf(card, member) {
@@ -51,51 +44,67 @@
 		return list;
 	}
 
-	// 宠物自身 HP（不含队伍效果）
-	function selfHp(card, sawoken) {
-		const m = makeTempMember(card, sawoken);
-		if (cfg.uniformBase > 0) return { hp: uniformHp(card, awokenListOf(card, m)), member: m };
-		const assist = cfg.selfAwoken ? { id: 0 } : null;
-		const ab = calculateAbility(m, assist, solo, teamsCount);
-		if (!ab) return { hp: 0, member: m };
-		m.ability = ab.map(a => a[0]);
-		m.abilityNoAwoken = ab.map(a => a[1]);
-		return { hp: ab[0][0], member: m };
+	// 条件觉醒的倍率 [HP, 攻, 回]
+	function conditionScale(list) {
+		const count = id => list.filter(a => a === id).length;
+		const s = [1, 1, 1];
+		const mul = (arr, n) => { if (n) for (let i = 0; i < 3; i++) s[i] *= arr[i] ** n; };
+		if (cfg.selfAwoken) mul([3, 3, 3], count(139));
+		if (cfg.assistSync) mul([3, 3, 3], count(138));
+		if (cfg.coop && solo) mul([1.5, 1.5, 1.5], count(30));
+		if (cfg.stage >= 5) { const k = cfg.stage >= 10 ? 2 : 1.5; mul([k, k, k], count(130)); }
+		if (cfg.benefit & 1) mul([2, 5, 2], count(128));
+		if (cfg.benefit & 2) mul([2, 5, 2], count(129));
+		if (cfg.brokens > 0) { const k = 1.2 ** cfg.brokens; mul([k, k, k], count(131)); }
+		return s;
 	}
 
-	function bestSelfHp(card) {
+	// 统一基础值模式：所有宠物同一基础 HP，只体现（无条件）觉醒效果
+	function uniformHp(card, list) {
+		const X = cfg.uniformBase;
+		const count = id => list.filter(a => a === id).length;
+		const prev = 1.1 ** count(63);
+		const flat = count(1) * (isJP ? 3000 : 2000) - count(65) * 2500;
+		let latter = 1.5 ** count(127) * 1.25 ** count(132) * 1.8 ** count(142)
+			* 1.5 ** (count(145) + count(146) + count(147));
+		if (!solo) latter *= 1.5 ** count(30);
+		const plus = card.stackable ? 0 : 990;
+		return Math.max(1, Math.floor((Math.round(X * prev) + plus + flat) * latter));
+	}
+
+	// 计算时暂时去掉页面“地下城强化”里的熟成/加护/部位破坏，改用上面的条件，避免重复计算
+	function withNeutralDungeon(fn) {
+		const dge = formation.dungeonEnchance;
+		const saved = { benefit: dge.benefit, stage: dge.stage, brokens: dge.brokens };
+		dge.benefit = 0; dge.stage = 1; dge.brokens = 0;
+		try { return fn(); } finally { Object.assign(dge, saved); }
+	}
+
+	function statsWith(card, sawoken) {
+		const m = makeTempMember(card, sawoken);
+		const ab = withNeutralDungeon(() => calculateAbility(m, null, solo, teamsCount));
+		if (!ab) return null;
+		const list = awokenListOf(card, m);
+		const scale = conditionScale(list);
+		const base = ab.map(a => a[0]);
+		if (cfg.uniformBase > 0) base[0] = uniformHp(card, list);
+		const [hp, atk, rcv] = base.map((v, i) => Math.floor(v * scale[i] + 1e-9));
+		return { hp, atk, rcv, sawoken, member: m, list };
+	}
+
+	// 宠物自身能力值（取 HP 最高的超觉醒）
+	function stats(card) {
+		if (!card || !card.enabled) return null;
+		if (cache.has(card.id)) return cache.get(card.id);
 		const options = [0];
 		if (cfg.superAwoken && (solo || teamsCount === 3)) options.push(...(card.superAwakenings || []));
 		let best = null;
 		for (const sa of options) {
-			const r = selfHp(card, sa);
-			if (!best || r.hp > best.hp) best = r;
+			const r = statsWith(card, sa);
+			if (r && (!best || r.hp > best.hp)) best = r;
 		}
+		cache.set(card.id, best);
 		return best;
-	}
-
-	// 把宠物放进当前队伍后的 HP
-	function teamHp(card) {
-		const best = bestSelfHp(card);
-		if (!best || best.hp <= 0) return 0;
-		const team = formation.teams[cfg.teamIdx] || formation.teams[0];
-		let hp = best.hp;
-		if (cfg.useLeader && team) {
-			const [l1, l2] = leaderIds(cfg.teamIdx);
-			const m = Object.assign({}, best.member, {
-				ability: [best.hp, 0, 0], abilityNoAwoken: [best.hp, 0, 0],
-			});
-			const members = [...team[0], m];
-			const assists = [...team[1], { id: 0 }];
-			const arr = countTeamHp([members, assists], l1, l2, solo);
-			hp = arr[arr.length - 1] ?? hp;
-		}
-		if (cfg.useTeamHp && team) {
-			const own = awokenListOf(card, best.member).filter(a => a === 46).length;
-			const count = awokenCountInTeam(team, 46, solo, teamsCount) + own;
-			hp *= 1 + 0.05 * count;
-		}
-		return Math.round(hp + 1e-12);
 	}
 
 	function teamStamp() {
@@ -104,105 +113,121 @@
 		return JSON.stringify([team[0].map(m => [m.id, m.awoken, m.sawoken]), team[1].map(m => [m.id, m.awoken]), team[3], solo, teamsCount]);
 	}
 
-	function cached(kind, card, fn) {
-		const stamp = kind === 'team' ? teamStamp() : '';
-		if (kind === 'team' && stamp !== cacheTeamStamp) {
-			cacheTeamStamp = stamp;
-			for (const k of [...cache.keys()]) if (k.startsWith('team:')) cache.delete(k);
+	// 把宠物放进当前队伍后的 HP
+	function teamHp(card) {
+		const stamp = teamStamp();
+		if (stamp !== teamCacheStamp) { teamCacheStamp = stamp; teamCache = new Map(); }
+		if (teamCache.has(card.id)) return teamCache.get(card.id);
+		const best = stats(card);
+		let hp = best?.hp || 0;
+		const team = formation.teams[cfg.teamIdx] || formation.teams[0];
+		if (hp > 0 && team) {
+			if (cfg.useLeader) {
+				const [l1, l2] = leaderIds(cfg.teamIdx);
+				const m = Object.assign({}, best.member, { ability: [hp, 0, 0], abilityNoAwoken: [hp, 0, 0] });
+				const arr = countTeamHp([[...team[0], m], [...team[1], { id: 0 }]], l1, l2, solo);
+				hp = arr[arr.length - 1] ?? hp;
+			}
+			if (cfg.useTeamHp) {
+				const own = best.list.filter(a => a === 46).length;
+				hp *= 1 + 0.05 * (awokenCountInTeam(team, 46, solo, teamsCount) + own);
+			}
+			hp = Math.round(hp + 1e-12);
 		}
-		const key = kind + ':' + card.id;
-		if (!cache.has(key)) cache.set(key, fn(card));
-		return cache.get(key);
+		teamCache.set(card.id, hp);
+		return hp;
 	}
 
 	const valueFns = {
-		mypdc_team_hp: card => cached('team', card, teamHp),
-		mypdc_self_hp: card => cached('self', card, c => bestSelfHp(c)?.hp ?? 0),
+		mypdc_team_hp: card => teamHp(card),
+		mypdc_self_hp: card => stats(card)?.hp ?? 0,
+		mypdc_self_atk: card => stats(card)?.atk ?? 0,
+		mypdc_self_rcv: card => stats(card)?.rcv ?? 0,
 	};
 
 	sort_function_list.push(
 		{ tag: 'mypdc_team_hp', name: '★队伍中HP（含队长技、全队HP觉醒）', function: (a, b) => valueFns.mypdc_team_hp(a) - valueFns.mypdc_team_hp(b) },
-		{ tag: 'mypdc_self_hp', name: '★自身HP（按下方觉醒条件）', function: (a, b) => valueFns.mypdc_self_hp(a) - valueFns.mypdc_self_hp(b) },
+		{ tag: 'mypdc_self_hp', name: '★HP（按觉醒条件）', function: (a, b) => valueFns.mypdc_self_hp(a) - valueFns.mypdc_self_hp(b) },
+		{ tag: 'mypdc_self_atk', name: '★攻击（按觉醒条件）', function: (a, b) => valueFns.mypdc_self_atk(a) - valueFns.mypdc_self_atk(b) },
+		{ tag: 'mypdc_self_rcv', name: '★回复（按觉醒条件）', function: (a, b) => valueFns.mypdc_self_rcv(a) - valueFns.mypdc_self_rcv(b) },
 	);
 
-	function currentSortTag() {
-		const list = document.querySelector('.search-box .sort-div .sort-list');
-		return list?.selectedOptions?.[0]?.getAttribute('data-tag');
-	}
+	function sortList() { return document.querySelector('.search-box .sort-div .sort-list'); }
+	function currentSortTag() { return sortList()?.selectedOptions?.[0]?.getAttribute('data-tag'); }
 
-	// 在搜索结果头像上显示当前排序用的数值
+	// 图标模式下，在头像上显示当前排序用的数值
 	function annotateResults() {
-		const tag = currentSortTag();
-		const fn = valueFns[tag];
+		const fn = valueFns[currentSortTag()];
 		document.querySelectorAll('.search-mon-list > *').forEach(li => {
 			let badge = li.querySelector('.mypdc-sortval');
-			const card = li.card;
-			if (!fn || !card) {
-				badge?.remove();
-				return;
-			}
-			if (!badge) {
-				badge = el('span', { class: 'mypdc-sortval' });
-				li.append(badge);
-			}
-			badge.textContent = fmt(fn(card));
+			if (!fn || !li.card) { badge?.remove(); return; }
+			if (!badge) { badge = el('span', { class: 'mypdc-sortval' }); li.append(badge); }
+			badge.textContent = fmt(fn(li.card));
 		});
 	}
 
-	function resort() {
-		clearCache();
-		const list = document.querySelector('.search-box .sort-div .sort-list');
-		list?.dispatchEvent(new Event('change'));
+	function changed() {
+		cache = new Map();
+		teamCache = new Map();
+		save('sort-cfg', cfg);
+		sortList()?.dispatchEvent(new Event('change'));
 		annotateResults();
+		listeners.forEach(fn => fn());
 	}
 
 	function buildPanel() {
 		const sortDiv = document.querySelector('.search-box .sort-div');
 		if (!sortDiv || document.querySelector('.mypdc-sort-cfg')) return;
 
-		const onChange = (key, parse) => e => {
-			cfg[key] = parse(e.target);
-			save('sort-cfg', cfg);
-			resort();
-		};
+		const onChange = (key, parse) => e => { cfg[key] = parse(e.target); changed(); };
 		const bool = t => t.checked;
 		const num = t => Math.max(0, parseInt(t.value, 10) || 0);
+		const check = (key, text, title) => el('label', { title }, el('input', { type: 'checkbox', checked: cfg[key], onchange: onChange(key, bool) }), ' ' + text);
+		const select = (key, options) => el('select', { onchange: onChange(key, num) },
+			options.map(([v, t]) => el('option', { value: v, selected: cfg[key] === v }, t)));
 
 		const teamSel = el('select', { onchange: onChange('teamIdx', num) });
+		const teamLabel = el('label', null, '参照 ', teamSel);
 		const refreshTeamSel = () => {
 			const n = formation?.teams?.length || 1;
 			teamSel.innerHTML = '';
 			for (let i = 0; i < n; i++) teamSel.add(new Option(`队伍${i + 1}`, i));
 			if (cfg.teamIdx >= n) cfg.teamIdx = 0;
 			teamSel.value = cfg.teamIdx;
-			teamSel.parentElement.classList.toggle('display-none', n < 2);
+			teamLabel.classList.toggle('display-none', n < 2);
 		};
 
 		const panel = el('details', { class: 'mypdc-sort-cfg', open: load('sort-cfg-open', true) },
-			el('summary', null, '★排序计算条件'),
+			el('summary', null, '★能力值计算条件'),
 			el('div', { class: 'mypdc-row' },
-				el('label', null, '等级 ',
-					el('select', { onchange: onChange('level', num) },
-						[99, 110, 120].map(l => el('option', { value: l, selected: cfg.level === l }, l === 99 ? '最高(不突破)' : 'Lv' + l)))),
-				el('label', null, el('input', { type: 'checkbox', checked: cfg.superAwoken, onchange: onChange('superAwoken', bool) }), ' 计入超觉醒(取HP最高)'),
-				el('label', null, el('input', { type: 'checkbox', checked: cfg.selfAwoken, onchange: onChange('selfAwoken', bool) }), ' 激活自力觉醒(无辅助)'),
+				el('label', { class: 'mypdc-switch' }, el('input', { type: 'checkbox', checked: cfg.listView, onchange: onChange('listView', bool) }), ' 列表显示搜索结果'),
+				el('label', null, '等级 ', select('level', [[99, '最高(不突破)'], [110, 'Lv110'], [120, 'Lv120']])),
+				check('superAwoken', '计入超觉醒(取HP最高)'),
 			),
 			el('div', { class: 'mypdc-row' },
-				el('label', null, el('input', { type: 'checkbox', checked: cfg.useLeader, onchange: onChange('useLeader', bool) }), ' 队长技HP倍率'),
-				el('label', null, el('input', { type: 'checkbox', checked: cfg.useTeamHp, onchange: onChange('useTeamHp', bool) }), ' 全队HP觉醒'),
-				el('label', null, '参照 ', teamSel),
+				el('span', { class: 'mypdc-label' }, '激活觉醒：'),
+				check('selfAwoken', '自力×3', '无辅助时'),
+				check('assistSync', '武装(武器同色)×3', '辅助与本体同主属性且有共同类型时'),
+				check('coop', '协力×1.5', '多人模式下自动计入'),
+				el('label', null, '熟成 ', select('stage', [[1, '无'], [5, '5层+ ×1.5'], [10, '10层+ ×2']])),
+				el('label', null, '加护 ', select('benefit', [[0, '无'], [1, '阳'], [2, '阴'], [3, '阴阳']])),
+				el('label', null, '部位破坏 ', el('input', { type: 'number', min: 0, max: 10, value: cfg.brokens, style: 'width:3.5em', onchange: onChange('brokens', num) }), '个'),
 			),
 			el('div', { class: 'mypdc-row' },
+				el('span', { class: 'mypdc-label' }, '队伍中HP：'),
+				check('useLeader', '队长技HP倍率'),
+				check('useTeamHp', '全队HP觉醒'),
+				teamLabel,
 				el('label', { title: '填 0 关闭。填入数值后，所有宠物都按这个基础HP计算，只比较觉醒带来的倍率效果' }, '统一基础HP ',
 					el('input', { type: 'number', min: 0, step: 1000, value: cfg.uniformBase, style: 'width:6em', onchange: onChange('uniformBase', num) }),
-					' (0=关闭，只比觉醒倍率)')),
-			el('div', { class: 'mypdc-hint' }, '选择排序方式里带 ★ 的两项使用这些条件。“队伍中HP”是把宠物加入当前队伍后的HP（乘队长技倍率和全队HP觉醒，不含徽章）。'),
+					' (0=关闭)')),
+			el('div', { class: 'mypdc-hint' }, '排序里带 ★ 的项目和列表显示都使用这些条件。“队伍中HP”= 加入当前队伍后的HP（乘队长技倍率和全队HP觉醒，不含徽章）。'),
 		);
 		panel.addEventListener('toggle', () => save('sort-cfg-open', panel.open));
 		sortDiv.after(panel);
 		refreshTeamSel();
 
-		sortDiv.querySelector('.sort-list')?.addEventListener('change', () => setTimeout(annotateResults));
+		sortList()?.addEventListener('change', () => setTimeout(annotateResults));
 		const listEl = document.querySelector('.search-mon-list');
 		if (listEl) new MutationObserver(() => {
 			if (valueFns[currentSortTag()]) annotateResults();
@@ -211,9 +236,10 @@
 		MyPDC.onTeamUpdate(() => {
 			refreshTeamSel();
 			if (currentSortTag() === 'mypdc_team_hp') annotateResults();
+			listeners.forEach(fn => fn());
 		});
 	}
 
 	window.addEventListener('load', buildPanel);
-	MyPDC.sort = { cfg, teamHp, bestSelfHp, resort };
+	MyPDC.sort = { cfg, stats, teamHp, changed, onChange: fn => listeners.push(fn) };
 })();

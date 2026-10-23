@@ -181,3 +181,121 @@ select.mypdc-attr-sel { font-weight: bold; }
 
 /* 编辑宠物窗口打开时隐藏减伤按钮，避免挡住“确认修改” */
 body:has(.edit-box:not(.display-none)) .mypdc-open-btn { display: none; }
+
+/* ---------- 能力值条件面板 ---------- */
+.mypdc-label { color: #bbb; }
+.mypdc-switch { font-weight: bold; }
+
+/* ---------- 主动技能筛选 ---------- */
+.mypdc-skill-filter {
+	margin: 6px 0;
+	padding: 4px 8px;
+	border: 1px dashed var(--mypdc-line);
+	border-radius: 6px;
+	font-size: 0.9em;
+}
+.mypdc-skill-filter summary { cursor: pointer; font-weight: bold; }
+.mypdc-chip-count { font-weight: normal; color: #ffd54f; }
+.mypdc-chip-group {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+	margin: 4px 0;
+}
+.mypdc-chip-title {
+	display: inline-block;
+	min-width: 5.5em;
+	color: #ddd;
+	font-size: 0.9em;
+}
+.mypdc-chip {
+	font-size: 13px;
+	padding: 3px 9px;
+	border-radius: 14px;
+	border: 1px solid #999;
+	background: rgba(255, 255, 255, 0.85);
+	color: #333;
+	cursor: pointer;
+}
+.mypdc-chip.on {
+	background: #ff9800;
+	border-color: #e65100;
+	color: #fff;
+	font-weight: bold;
+}
+.mypdc-chip-attr-0 { color: #e53935; }
+.mypdc-chip-attr-1 { color: #1e88e5; }
+.mypdc-chip-attr-2 { color: #2e7d32; }
+.mypdc-chip-attr-3 { color: #b8860b; }
+.mypdc-chip-attr-4 { color: #8e24aa; }
+.mypdc-chip-attr-5 { color: #d81b60; }
+.mypdc-chip.on[class*="mypdc-chip-attr-"] { color: #fff; }
+
+/* ---------- 列表显示 ---------- */
+.mypdc-list-wrap { display: none; }
+body.mypdc-listview .search-mon-list { display: none !important; }
+body.mypdc-listview .mypdc-list-wrap {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	height: 45vh;
+	overflow: auto;
+	resize: vertical;
+	background: #fafafa;
+	color: #222;
+	border: 1px solid white;
+	border-radius: 5px;
+}
+.mypdc-list-empty { padding: 12px; }
+.mypdc-list-table {
+	border-collapse: collapse;
+	width: 100%;
+	font-size: 13px;
+}
+.mypdc-list-table th {
+	position: sticky;
+	top: 0;
+	z-index: 3;
+	background: #4e3b2b;
+	color: #fff;
+	font-weight: normal;
+	padding: 4px 6px;
+	white-space: nowrap;
+	user-select: none;
+}
+.mypdc-list-table th.mypdc-sortable { cursor: pointer; }
+.mypdc-list-table th.mypdc-sortable:hover { background: #6d5440; }
+.mypdc-list-table th.mypdc-sorted { background: #c05; }
+.mypdc-list-table td {
+	border-bottom: 1px solid #ddd;
+	padding: 2px 6px;
+	text-align: center;
+	white-space: nowrap;
+}
+.mypdc-list-table tr { cursor: pointer; }
+.mypdc-list-table tr:hover td { background: #fff3e0; }
+.mypdc-list-table tr.mypdc-current td { background: #ffe0b2; }
+.mypdc-list-table td.mypdc-num { text-align: right; font-variant-numeric: tabular-nums; }
+.mypdc-list-table td.mypdc-list-name {
+	text-align: left;
+	white-space: normal;
+	min-width: 8em;
+	max-width: 16em;
+}
+.mypdc-list-icon > * { zoom: 0.45; pointer-events: none; }
+.mypdc-list-awoken { text-align: left !important; }
+.mypdc-aw { display: inline-flex; flex-wrap: wrap; zoom: 0.62; vertical-align: middle; }
+.mypdc-saw { margin-left: 8px; opacity: 0.55; }
+.mypdc-saw-pick { margin-left: 6px; font-size: 11px; color: #c05; }
+.mypdc-saw-pick .awoken-icon { zoom: 0.55; }
+.mypdc-more {
+	display: block;
+	margin: 8px auto;
+	padding: 4px 16px;
+	cursor: pointer;
+}
+@media (max-width: 760px) {
+	.mypdc-list-table { font-size: 12px; }
+	.mypdc-list-table td.mypdc-list-name { min-width: 6em; }
+}
