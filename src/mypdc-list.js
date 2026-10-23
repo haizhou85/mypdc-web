@@ -63,13 +63,10 @@
 			['掉落提升', ['主动技', '珠子掉落 类', '掉落率提升', '掉落率提升 buff']],
 			['掉强化', ['主动技', '珠子掉落 类', '掉落强化宝珠 buff']],
 		]],
-		['转珠', [
-			['→火', ['主动技', '指定色转珠类', '转为颜色', '变为-火'], 0],
-			['→水', ['主动技', '指定色转珠类', '转为颜色', '变为-水'], 1],
-			['→木', ['主动技', '指定色转珠类', '转为颜色', '变为-木'], 2],
-			['→光', ['主动技', '指定色转珠类', '转为颜色', '变为-光'], 3],
-			['→暗', ['主动技', '指定色转珠类', '转为颜色', '变为-暗'], 4],
-			['→心', ['主动技', '指定色转珠类', '转为颜色', '变为-心'], 5],
+		['生成珠子', [
+			['火', 'custom:orb-0', 0], ['水', 'custom:orb-1', 1], ['木', 'custom:orb-2', 2],
+			['光', 'custom:orb-3', 3], ['暗', 'custom:orb-4', 4], ['心', 'custom:orb-5', 5],
+			['废珠', 'custom:orb-6'], ['毒', 'custom:orb-7'], ['猛毒', 'custom:orb-8'], ['炸弹', 'custom:orb-9'],
 		]],
 		['产珠', [
 			['产竖', ['主动技', '固定位置产珠类', '产竖']],
@@ -92,11 +89,34 @@
 		if (!sk) return null;
 		return sk.type == 153 ? sk.params[0] : (sk.params[1] || 0);
 	}
+	// 技能最终会在板面上生成的珠子颜色（转珠、洗版、随机产珠、固定位置生成都算）
+	const orbCache = new Map();
+	function orbColorsOf(card) {
+		if (orbCache.has(card.id)) return orbCache.get(card.id);
+		const set = new Set();
+		const add = arr => (Array.isArray(arr) ? arr : [arr]).forEach(a => { if (Number.isInteger(a) && a >= 0) set.add(a); });
+		const walk = n => {
+			if (Array.isArray(n)) { n.forEach(walk); return; }
+			if (!n || typeof n !== 'object') return;
+			switch (n.kind) {
+				case SkillKinds.ChangeOrbs: (n.changes || []).forEach(c => add(c.to)); break;
+				case SkillKinds.BoardChange: add(n.attrs); break;
+				case SkillKinds.GenerateOrbs: add(n.orbs); break;
+				case SkillKinds.FixedOrbs: (n.generates || []).forEach(g => add(g.orbs)); break;
+			}
+			for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v);
+		};
+		try { if (card.activeSkillId) walk(skillParser(card.activeSkillId)); } catch (e) { /* 解析失败当作没有 */ }
+		orbCache.set(card.id, set);
+		return set;
+	}
+
 	const CUSTOM_FILTERS = {
 		'maxhp-up': cards => cards.filter(c => { const sk = activeSkillOf(c, [237]); return sk && sk.params[1] > 100; }),
 		'enemy-attr-any': cards => cards.filter(c => enemyAttrOf(c) !== null),
 	};
 	for (let a = 0; a < 5; a++) CUSTOM_FILTERS['enemy-attr-' + a] = cards => cards.filter(c => enemyAttrOf(c) === a);
+	for (let a = 0; a <= 9; a++) CUSTOM_FILTERS['orb-' + a] = cards => cards.filter(c => orbColorsOf(c).has(a));
 
 	function findFilter(path) {
 		if (typeof path === 'string') return CUSTOM_FILTERS[path.replace('custom:', '')] || null;
@@ -249,7 +269,7 @@
 				el('button', { type: 'button', onclick: () => clearAll() }, '清除技能条件'),
 			),
 			groups,
-			el('div', { class: 'mypdc-hint' }, '点选后自动重新搜索，可以和上面的属性、类型、觉醒条件一起用。更细的技能条件在下面的“特殊搜索”里。'),
+			el('div', { class: 'mypdc-hint' }, '点选后自动重新搜索，可以和上面的属性、类型、觉醒条件一起用。“生成珠子”包括转珠、洗版、随机产珠和固定位置生成，多选时按上面的 AND/OR 关系。更细的技能条件在下面的“特殊搜索”里。'),
 		);
 		panel.addEventListener('toggle', () => save('skill-filter-open', panel.open));
 		anchor.before(panel);
