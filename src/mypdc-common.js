@@ -122,6 +122,16 @@ const MyPDC = (function () {
 		help.before(credit);
 	});
 
+	// 编辑窗口：把绿色的宠物信息挪到能力值/技能正上方，合成一张卡片；
+	// ID 输入、进化链、潜觉留在卡片上方
+	window.addEventListener('load', () => {
+		const info = document.querySelector('.edit-box .monsterinfo-box');
+		const ability = document.querySelector('.edit-box .setting-box .ability-box');
+		if (!info || !ability || info.nextElementSibling === ability) return;
+		ability.before(info);
+		document.body.classList.add('mypdc-merged-card');
+	});
+
 	return {
 		load, save, leaderIds, cardName, el, fmt, teamStats, formationStats, ATTR_NAMES,
 		onTeamUpdate: fn => listeners.push(fn),

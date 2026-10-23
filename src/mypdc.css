@@ -323,3 +323,16 @@ body:not(.mypdc-listview) .mypdc-sort-bar { display: flex; }
 
 /* 不固定“搜索列表 + 宠物信息”这一块：它太高，会挡住下面的详细信息 */
 body.use-sticky .sticky-box { position: static !important; }
+
+/* 宠物信息 + 能力值/技能 合成一张卡片 */
+body.mypdc-merged-card .edit-box .monsterinfo-box {
+	margin-top: 8px;
+	border: #FFDA70 solid 2px;
+	border-bottom: none;
+	border-radius: 15px 15px 0 0;
+	box-shadow: none;
+}
+body.mypdc-merged-card .edit-box .setting-box .ability-box {
+	border-top: #B1BB39 solid 3px;
+	border-radius: 0 0 15px 15px;
+}
