@@ -25,6 +25,7 @@
 			['属性减伤', ['主动技', 'buff 类', '限属减伤 buff']],
 			['全体攻击', ['主动技', 'buff 类', '变为全体攻击']],
 			['伤害上限', ['主动技', '对自身队伍生效类', '增加伤害上限', '增加伤害上限 - 任意']],
+			['HP上限↑', 'custom:maxhp-up'],
 		]],
 		['队伍/回复', [
 			['溜(减CD)', ['主动技', '对自身队伍生效类', '【溜】减少CD']],
@@ -38,11 +39,20 @@
 			['威吓', ['主动技', '对敌 buff 类', '威吓']],
 			['破防', ['主动技', '对敌 buff 类', '破防']],
 			['中毒', ['主动技', '对敌 buff 类', '中毒']],
-			['变敌属性', ['主动技', '对敌 buff 类', '改变敌人属性']],
 			['反击', ['主动技', '对敌 buff 类', '受伤反击 buff']],
-			['重力', ['主动技', '对敌直接伤害类-重力', '任意']],
+			['重力(剩余HP%)', ['主动技', '对敌直接伤害类-重力', '敌人当前血量']],
+			['重力(最大HP%)', ['主动技', '对敌直接伤害类-重力', '敌人最大血量']],
+			['部位破坏重力', ['主动技', '对敌直接伤害类-重力', '部位破坏重力']],
 			['固伤', ['主动技', '对敌直接伤害类-固伤', '任意']],
 			['全体大炮', ['主动技', '对敌直接伤害类-大炮', '对象', '对象-敌方全体']],
+		]],
+		['变敌属性', [
+			['任意', 'custom:enemy-attr-any'],
+			['敌→火', 'custom:enemy-attr-0', 0],
+			['敌→水', 'custom:enemy-attr-1', 1],
+			['敌→木', 'custom:enemy-attr-2', 2],
+			['敌→光', 'custom:enemy-attr-3', 3],
+			['敌→暗', 'custom:enemy-attr-4', 4],
 		]],
 		['板面', [
 			['解锁', ['主动技', '改变宝珠状态类', '解锁']],
@@ -72,7 +82,24 @@
 		]],
 	];
 
+	// 上游没有直接对应的条件，在这里自己写
+	function activeSkillOf(card, types) {
+		if (!card.activeSkillId) return null;
+		return getActuallySkills(Skills[card.activeSkillId], types, true)?.[0] || null;
+	}
+	function enemyAttrOf(card) { // 变敌属性：返回变成的属性，没有则 null
+		const sk = activeSkillOf(card, [153, 224]);
+		if (!sk) return null;
+		return sk.type == 153 ? sk.params[0] : (sk.params[1] || 0);
+	}
+	const CUSTOM_FILTERS = {
+		'maxhp-up': cards => cards.filter(c => { const sk = activeSkillOf(c, [237]); return sk && sk.params[1] > 100; }),
+		'enemy-attr-any': cards => cards.filter(c => enemyAttrOf(c) !== null),
+	};
+	for (let a = 0; a < 5; a++) CUSTOM_FILTERS['enemy-attr-' + a] = cards => cards.filter(c => enemyAttrOf(c) === a);
+
 	function findFilter(path) {
+		if (typeof path === 'string') return CUSTOM_FILTERS[path.replace('custom:', '')] || null;
 		let node = specialSearchFunctions;
 		for (const name of path) {
 			node = node?.functions?.find(f => (f.otLangName?.chs ?? f.name) === name);
@@ -132,9 +159,9 @@
 			const items = chips.map(([label, path, attr]) => {
 				const fn = findFilter(path);
 				if (!fn) return null;
-				const key = path.join('/');
+				const key = typeof path === 'string' ? path : path.join('/');
 				chipIndex.set(key, { fn, label });
-				const b = el('button', { type: 'button', class: 'mypdc-chip' + (attr !== undefined ? ` mypdc-chip-attr-${attr}` : ''), 'data-key': key, title: path.slice(1).join(' › '),
+				const b = el('button', { type: 'button', class: 'mypdc-chip' + (attr !== undefined ? ` mypdc-chip-attr-${attr}` : ''), 'data-key': key, title: typeof path === 'string' ? label : path.slice(1).join(' › '),
 					onclick: () => {
 						const i = fstate.chips.indexOf(key);
 						if (i >= 0) fstate.chips.splice(i, 1); else fstate.chips.push(key);

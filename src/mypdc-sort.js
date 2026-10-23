@@ -49,8 +49,10 @@
 		const count = id => list.filter(a => a === id).length;
 		const s = [1, 1, 1];
 		const mul = (arr, n) => { if (n) for (let i = 0; i < 3; i++) s[i] *= arr[i] ** n; };
-		if (cfg.selfAwoken) mul([3, 3, 3], count(139));
-		if (cfg.assistSync) mul([3, 3, 3], count(138));
+		// 自力（无辅助）和武装（有辅助）不能同时成立：两个都勾选时只算一次 ×3
+		if (cfg.selfAwoken && cfg.assistSync) mul([3, 3, 3], Math.max(count(139), count(138)));
+		else if (cfg.selfAwoken) mul([3, 3, 3], count(139));
+		else if (cfg.assistSync) mul([3, 3, 3], count(138));
 		if (cfg.coop && solo) mul([1.5, 1.5, 1.5], count(30));
 		if (cfg.stage >= 5) { const k = cfg.stage >= 10 ? 2 : 1.5; mul([k, k, k], count(130)); }
 		if (cfg.benefit & 1) mul([2, 5, 2], count(128));
@@ -207,7 +209,7 @@
 			el('div', { class: 'mypdc-row' },
 				el('span', { class: 'mypdc-label' }, '激活觉醒：'),
 				check('selfAwoken', '自力×3', '无辅助时'),
-				check('assistSync', '武装(武器同色)×3', '辅助与本体同主属性且有共同类型时'),
+				check('assistSync', '武装(武器同色)×3', '辅助与本体同主属性且有共同类型时。和自力不能同时成立，同时拥有两种觉醒的宠物只算一次 ×3'),
 				check('coop', '协力×1.5', '多人模式下自动计入'),
 				el('label', null, '熟成 ', select('stage', [[1, '无'], [5, '5层+ ×1.5'], [10, '10层+ ×2']])),
 				el('label', null, '加护 ', select('benefit', [[0, '无'], [1, '阳'], [2, '阴'], [3, '阴阳']])),
