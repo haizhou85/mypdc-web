@@ -337,16 +337,6 @@ body.mypdc-merged-card .edit-box .setting-box .ability-box {
 	border-radius: 0 0 15px 15px;
 }
 
-/* 截图时使用竖向排列（不分左右两栏） */
-body.mypdc-capture .formation-box {
-	width: calc(var(--head-block-width) * 6) !important;
-	min-width: calc(var(--head-block-width) * 6) !important;
-}
-body.mypdc-capture.block-width-7 .formation-box {
-	width: calc(var(--head-block-width) * 7) !important;
-	min-width: calc(var(--head-block-width) * 7) !important;
-}
-body.mypdc-capture .team-bigbox { display: block !important; }
 .search-box .sort-div::before, .search-box .sort-div::after { content: none !important; display: none !important; }
 /* “关闭搜索 / 清空搜索 / 分享搜索”这一排不需要：折叠标题可关闭，各栏有自己的清除按钮 */
 .search-box .control-div > .button-div { display: none !important; }

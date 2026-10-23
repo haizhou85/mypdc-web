@@ -138,8 +138,10 @@ const MyPDC = (function () {
 			statusLine?.writeText(localTranslating.status_message.prepare_capture);
 			formationBox.classList.remove('edit-code');
 			const downLink = controlBox.querySelector('.down-capture');
+			// 用窄于 1310px 的虚拟窗口渲染，宽屏两栏布局的媒体查询不生效，直接得到上游的竖向布局
 			const options = {
-				onclone: doc => doc.body.classList.add('mypdc-capture'),
+				windowWidth: 1000,
+				onclone: doc => doc.body.classList.remove('side-mode'),
 			};
 			if (transparent) options.backgroundColor = null;
 			html2canvas(target, options).then(canvas => {
