@@ -299,3 +299,24 @@ body.mypdc-listview .mypdc-list-wrap {
 	.mypdc-list-table { font-size: 12px; }
 	.mypdc-list-table td.mypdc-list-name { min-width: 6em; }
 }
+
+/* ---------- 精简上游界面 ---------- */
+#help-link, #feedback-link { display: none !important; }
+.mypdc-credit { font-size: 12px; color: #666; margin-left: 6px; }
+.mypdc-credit a { margin: 0 2px; }
+/* 条件变化自动搜索，不需要“开始搜索”；不需要“附加显示” */
+.search-box .search-start, .search-box .additional-div { display: none !important; }
+/* 上游排序下拉框与表格表头排序冲突，只保留结果数量 */
+.search-box .sort-div > :not(.search-list-length) { display: none !important; }
+.search-box .control-div .sort-div { display: flex !important; justify-content: flex-end; }
+
+.mypdc-sort-bar {
+	display: none;
+	align-items: center;
+	gap: 6px;
+	margin: 4px 0;
+	font-size: 14px;
+	color: #fff;
+}
+body:not(.mypdc-listview) .mypdc-sort-bar { display: flex; }
+.mypdc-sort-bar select, .mypdc-sort-bar button { font-size: 13px; }

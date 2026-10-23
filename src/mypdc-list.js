@@ -140,9 +140,7 @@
 
 	const chipIndex = new Map();
 
-	function runSearch() {
-		document.querySelector('.search-box .search-start')?.click();
-	}
+	function runSearch() { MyPDC.list.autoSearch(); }
 
 	function buildSkillFilter() {
 		const anchor = document.querySelector('.search-box .special-div');
@@ -234,17 +232,8 @@
 		renderTimer = setTimeout(() => { renderTimer = null; doRender(); }, 30);
 	}
 
-	function doRender() {
-		document.body.classList.toggle('mypdc-listview', !!S.cfg.listView);
-		if (!wrap || !S.cfg.listView) return;
-		const heads = [...ul.children].filter(li => li.card);
-		const scroll = wrap.scrollTop;
-		wrap.innerHTML = '';
-		if (!heads.length) {
-			wrap.append(el('div', { class: 'mypdc-hint mypdc-list-empty' }, '没有搜索结果。设置条件后点“开始搜索”。'));
-			return;
-		}
-		let rows = heads.map(li => ({ li, card: li.card }));
+	function sortedRows(heads) {
+		const rows = heads.map(li => ({ li, card: li.card }));
 		const col = COLUMNS.find(c => c.key === lstate.key && c.value);
 		if (col) {
 			const dir = lstate.desc ? -1 : 1;
@@ -255,16 +244,68 @@
 				return d * dir || a.card.id - b.card.id;
 			});
 		}
+		return { rows, col };
+	}
+
+	function setSort(key) {
+		const c = COLUMNS.find(x => x.key === key);
+		if (!c) { lstate.key = null; }
+		else if (lstate.key === key) lstate.desc = !lstate.desc;
+		else { lstate.key = key; lstate.desc = !c.asc; }
+		save('list-sort', lstate); shown = PAGE; render();
+	}
+
+	// 排序栏（图标模式下用来选排序；列表模式下直接点表头）
+	let sortBar;
+	function renderSortBar() {
+		if (!sortBar) return;
+		sortBar.innerHTML = '';
+		sortBar.append('排序 ',
+			el('select', { onchange: e => setSort(e.target.value) },
+				el('option', { value: '' }, '默认'),
+				COLUMNS.filter(c => c.value).map(c => el('option', { value: c.key, selected: c.key === lstate.key }, c.title))),
+			lstate.key ? el('button', { type: 'button', onclick: () => setSort(lstate.key) }, lstate.desc ? '▼ 从大到小' : '▲ 从小到大') : null,
+		);
+	}
+
+	let reordering = false;
+	function doRender() {
+		const listView = !S.cfg.iconView;
+		document.body.classList.toggle('mypdc-listview', listView);
+		renderSortBar();
+		if (!wrap) return;
+		const heads = [...ul.children].filter(li => li.card);
+		const { rows, col } = sortedRows(heads);
+
+		if (!listView) { // 图标模式：按同样的排序重新排列头像，并在头像上显示数值
+			reordering = true;
+			const frag = document.createDocumentFragment();
+			rows.forEach(({ li, card }) => {
+				let badge = li.querySelector('.mypdc-sortval');
+				if (col && !col.text && col.key !== 'id') {
+					if (!badge) { badge = el('span', { class: 'mypdc-sortval' }); li.append(badge); }
+					const v = col.value(card);
+					badge.textContent = Number.isFinite(v) ? fmt(v) : '-';
+				} else badge?.remove();
+				frag.append(li);
+			});
+			ul.append(frag);
+			setTimeout(() => { reordering = false; });
+			return;
+		}
+
+		const scroll = wrap.scrollTop;
+		wrap.innerHTML = '';
+		if (!heads.length) {
+			wrap.append(el('div', { class: 'mypdc-hint mypdc-list-empty' }, '没有符合条件的宠物。'));
+			return;
+		}
 
 		const head = el('tr', null, COLUMNS.map(c => {
 			const active = c.key === lstate.key;
 			return el('th', {
 				class: (c.value ? 'mypdc-sortable' : '') + (active ? ' mypdc-sorted' : ''),
-				onclick: c.value ? () => {
-					if (lstate.key === c.key) lstate.desc = !lstate.desc;
-					else { lstate.key = c.key; lstate.desc = !c.asc; }
-					save('list-sort', lstate); shown = PAGE; render();
-				} : null,
+				onclick: c.value ? () => setSort(c.key) : null,
 			}, c.title, active ? (lstate.desc ? ' ▼' : ' ▲') : '');
 		}));
 		const table = el('table', { class: 'mypdc-list-table' }, head);
@@ -306,12 +347,76 @@
 		wrap.scrollTop = scroll;
 	}
 
+	// ---------------- 条件一改就自动搜索 ----------------
+	function searchOptionsEmpty() {
+		const box = document.querySelector('.search-box');
+		const o = box?.getSearchOptions?.();
+		if (!o) return false;
+		return o.attrs.every(a => !a) && !o.types.length && !o.rares.length && !o.awokens.length && !o.sawokens.length &&
+			!o.canAssist && !o.canLv110 && !o.is8Latent && !o.notWeapon &&
+			o.specialFilters.every(f => !f || f.every(n => !n)) &&
+			!fstate.chips.length && !fstate.maxCd;
+	}
+	let searchTimer = null;
+	function autoSearch() {
+		clearTimeout(searchTimer);
+		searchTimer = setTimeout(() => {
+			if (searchOptionsEmpty()) {
+				// 没有任何条件时不列出全部 1 万多只，改为显示最新的 100 只
+				const form = document.getElementById('form-string-search');
+				const input = form?.querySelector('[name="search-string"]');
+				if (input) input.value = '';
+				form?.requestSubmit?.();
+			} else {
+				document.querySelector('.search-box .search-start')?.click();
+			}
+		}, 250);
+	}
+	function setupAutoSearch() {
+		const box = document.querySelector('.search-box');
+		if (!box) return;
+		const ignore = '.mypdc-sort-cfg, .mypdc-skill-filter, .sort-div, .additional-div, .search-close, .search-share, .search-start, summary';
+		const handler = e => { if (!e.target.closest(ignore)) autoSearch(); };
+		box.addEventListener('change', handler);
+		box.addEventListener('click', e => { if (e.target.closest('button, .awoken-icon, .type-icon') && !e.target.closest('select')) handler(e); });
+		// 打开搜索栏时，如果还没有结果就先搜一次
+		box.addEventListener('toggle', () => { if (box.open && !ul?.children.length) autoSearch(); });
+	}
+
+	// ---------------- 选中宠物时把加蛋设为 +297 / +891 ----------------
+	function applyPlusToEditBox() {
+		const editBox = document.querySelector('.edit-box');
+		const btns = [...document.querySelectorAll('.edit-box .m-plus-fast-setting')];
+		if (!editBox || !btns.length) return;
+		const want = S.cfg.plus891 && !editBox.isAssist ? '3' : '1';
+		btns.find(b => b.value === want)?.click();
+	}
+	function setupPlus() {
+		const form = document.getElementById('form-id-search');
+		if (!form || form.__mypdc) return;
+		const original = form.onchange;
+		form.onchange = function () {
+			const r = original?.apply(this, arguments);
+			applyPlusToEditBox();
+			return r;
+		};
+		form.__mypdc = true;
+		let last = S.cfg.plus891;
+		S.onChange(() => { // 切换“满加蛋”时也更新正在编辑的宠物
+			if (S.cfg.plus891 === last) return;
+			last = S.cfg.plus891;
+			const editBox = document.querySelector('.edit-box');
+			if (editBox && !editBox.classList.contains('display-none') && editBox.mid > 0) applyPlusToEditBox();
+		});
+	}
+
 	function buildList() {
 		ul = document.querySelector('.search-mon-list');
 		if (!ul || wrap) return;
 		wrap = el('div', { class: 'mypdc-list-wrap' });
-		ul.before(wrap);
-		new MutationObserver(() => { shown = PAGE; render(); }).observe(ul, { childList: true });
+		sortBar = el('div', { class: 'mypdc-sort-bar' });
+		ul.before(sortBar, wrap);
+		new MutationObserver(() => { if (reordering) return; shown = PAGE; render(); }).observe(ul, { childList: true });
 		S.onChange(render);
 		render();
 	}
@@ -319,6 +424,8 @@
 	window.addEventListener('load', () => {
 		buildSkillFilter();
 		buildList();
+		setupAutoSearch();
+		setupPlus();
 	});
-	MyPDC.list = { render, applySkillFilter, fstate };
+	MyPDC.list = { render, applySkillFilter, fstate, autoSearch };
 })();

@@ -110,6 +110,18 @@ const MyPDC = (function () {
 		return Math.round(n).toLocaleString('en-US');
 	}
 
+	// 顶部：去掉“帮助和提示”“反馈”，改为来源声明
+	window.addEventListener('load', () => {
+		const help = document.getElementById('help-link');
+		if (!help || document.querySelector('.mypdc-credit')) return;
+		const credit = el('span', { class: 'mypdc-credit' },
+			'来源：基于 ',
+			el('a', { href: 'https://github.com/Mapaler/PADDashFormation', target: '_blank', rel: 'noopener' }, 'PADDashFormation'),
+			'（Mapaler，GPL-3.0）修改，功能参考 PDC ダメージ計算（corombo13）。游戏图片与资料版权属于 GungHo Online Entertainment。',
+			el('a', { href: 'https://github.com/haizhou85/mypdc-web', target: '_blank', rel: 'noopener' }, '本站源码'));
+		help.before(credit);
+	});
+
 	return {
 		load, save, leaderIds, cardName, el, fmt, teamStats, formationStats, ATTR_NAMES,
 		onTeamUpdate: fn => listeners.push(fn),

@@ -16,8 +16,15 @@
 		useTeamHp: true,    // “队伍中HP”计入全队 HP 觉醒
 		uniformBase: 0,     // >0 时：所有宠物假定同一基础 HP，只比较觉醒倍率效果
 		teamIdx: 0,
-		listView: false,    // 搜索结果用列表显示
+		iconView: false,    // 搜索结果用图标显示（默认列表）
+		plus891: false,     // 满加蛋 +891（每项 297）；默认 +297（每项 99）
 	}, load('sort-cfg', {}));
+	delete cfg.listView; // 旧版设置
+
+	// 武器（有“武器”觉醒的辅助）加蛋超过 297 的部分无效
+	function plusPerStat(card) {
+		return cfg.plus891 && !card.awakenings.includes(49) ? 297 : 99;
+	}
 
 	const listeners = [];
 	let cache = new Map();
@@ -31,7 +38,7 @@
 		return {
 			id: card.id,
 			level: cfg.level === 99 ? card.maxLevel : level,
-			plus: stackable ? [0, 0, 0] : [99, 99, 99],
+			plus: stackable ? [0, 0, 0] : Array(3).fill(plusPerStat(card)),
 			awoken: card.awakenings.length,
 			sawoken: sawoken || 0,
 			latent: [],
@@ -70,7 +77,7 @@
 		let latter = 1.5 ** count(127) * 1.25 ** count(132) * 1.8 ** count(142)
 			* 1.5 ** (count(145) + count(146) + count(147));
 		if (!solo) latter *= 1.5 ** count(30);
-		const plus = card.stackable ? 0 : 990;
+		const plus = card.stackable ? 0 : plusPerStat(card) * 10;
 		return Math.max(1, Math.floor((Math.round(X * prev) + plus + flat) * latter));
 	}
 
@@ -140,46 +147,19 @@
 		return hp;
 	}
 
-	const valueFns = {
-		mypdc_team_hp: card => teamHp(card),
-		mypdc_self_hp: card => stats(card)?.hp ?? 0,
-		mypdc_self_atk: card => stats(card)?.atk ?? 0,
-		mypdc_self_rcv: card => stats(card)?.rcv ?? 0,
-	};
-
-	sort_function_list.push(
-		{ tag: 'mypdc_team_hp', name: '★队伍中HP（含队长技、全队HP觉醒）', function: (a, b) => valueFns.mypdc_team_hp(a) - valueFns.mypdc_team_hp(b) },
-		{ tag: 'mypdc_self_hp', name: '★HP（按觉醒条件）', function: (a, b) => valueFns.mypdc_self_hp(a) - valueFns.mypdc_self_hp(b) },
-		{ tag: 'mypdc_self_atk', name: '★攻击（按觉醒条件）', function: (a, b) => valueFns.mypdc_self_atk(a) - valueFns.mypdc_self_atk(b) },
-		{ tag: 'mypdc_self_rcv', name: '★回复（按觉醒条件）', function: (a, b) => valueFns.mypdc_self_rcv(a) - valueFns.mypdc_self_rcv(b) },
-	);
-
-	function sortList() { return document.querySelector('.search-box .sort-div .sort-list'); }
-	function currentSortTag() { return sortList()?.selectedOptions?.[0]?.getAttribute('data-tag'); }
-
-	// 图标模式下，在头像上显示当前排序用的数值
-	function annotateResults() {
-		const fn = valueFns[currentSortTag()];
-		document.querySelectorAll('.search-mon-list > *').forEach(li => {
-			let badge = li.querySelector('.mypdc-sortval');
-			if (!fn || !li.card) { badge?.remove(); return; }
-			if (!badge) { badge = el('span', { class: 'mypdc-sortval' }); li.append(badge); }
-			badge.textContent = fmt(fn(li.card));
-		});
-	}
-
 	function changed() {
 		cache = new Map();
 		teamCache = new Map();
 		save('sort-cfg', cfg);
-		sortList()?.dispatchEvent(new Event('change'));
-		annotateResults();
 		listeners.forEach(fn => fn());
 	}
 
 	function buildPanel() {
 		const sortDiv = document.querySelector('.search-box .sort-div');
 		if (!sortDiv || document.querySelector('.mypdc-sort-cfg')) return;
+		// 上游的排序下拉框和表格表头排序冲突，固定为“无”并隐藏（CSS）
+		const upstreamSort = sortDiv.querySelector('.sort-list');
+		if (upstreamSort) { upstreamSort.selectedIndex = 0; upstreamSort.dispatchEvent(new Event('change')); }
 
 		const onChange = (key, parse) => e => { cfg[key] = parse(e.target); changed(); };
 		const bool = t => t.checked;
@@ -202,8 +182,9 @@
 		const panel = el('details', { class: 'mypdc-sort-cfg', open: load('sort-cfg-open', true) },
 			el('summary', null, '★能力值计算条件'),
 			el('div', { class: 'mypdc-row' },
-				el('label', { class: 'mypdc-switch' }, el('input', { type: 'checkbox', checked: cfg.listView, onchange: onChange('listView', bool) }), ' 列表显示搜索结果'),
+				el('label', { class: 'mypdc-switch' }, el('input', { type: 'checkbox', checked: cfg.iconView, onchange: onChange('iconView', bool) }), ' 图标模式'),
 				el('label', null, '等级 ', select('level', [[99, '最高(不突破)'], [110, 'Lv110'], [120, 'Lv120']])),
+				check('plus891', '满加蛋 +891', '每项加蛋 297（武器最多 +297）；不勾选为 +297'),
 				check('superAwoken', '计入超觉醒(取HP最高)'),
 			),
 			el('div', { class: 'mypdc-row' },
@@ -223,21 +204,15 @@
 				el('label', { title: '填 0 关闭。填入数值后，所有宠物都按这个基础HP计算，只比较觉醒带来的倍率效果' }, '统一基础HP ',
 					el('input', { type: 'number', min: 0, step: 1000, value: cfg.uniformBase, style: 'width:6em', onchange: onChange('uniformBase', num) }),
 					' (0=关闭)')),
-			el('div', { class: 'mypdc-hint' }, '排序里带 ★ 的项目和列表显示都使用这些条件。“队伍中HP”= 加入当前队伍后的HP（乘队长技倍率和全队HP觉醒，不含徽章）。'),
+			el('div', { class: 'mypdc-hint' }, '列表里的能力值按这些条件计算，点表头排序。“队伍中HP”= 加入当前队伍后的HP（乘队长技倍率和全队HP觉醒，不含徽章）。选中宠物时，下方详细信息的加蛋也会按“满加蛋”设为 +891 或 +297。'),
 		);
 		panel.addEventListener('toggle', () => save('sort-cfg-open', panel.open));
 		sortDiv.after(panel);
 		refreshTeamSel();
 
-		sortList()?.addEventListener('change', () => setTimeout(annotateResults));
-		const listEl = document.querySelector('.search-mon-list');
-		if (listEl) new MutationObserver(() => {
-			if (valueFns[currentSortTag()]) annotateResults();
-		}).observe(listEl, { childList: true });
-
 		MyPDC.onTeamUpdate(() => {
 			refreshTeamSel();
-			if (currentSortTag() === 'mypdc_team_hp') annotateResults();
+			teamCache = new Map();
 			listeners.forEach(fn => fn());
 		});
 	}
