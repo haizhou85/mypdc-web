@@ -92,6 +92,7 @@
 	// 技能最终会在板面上生成的珠子颜色（转珠、洗版、随机产珠、固定位置生成都算）
 	const orbCache = new Map();
 	function orbColorsOf(card) {
+		if (!skillsReady()) return new Set();
 		if (orbCache.has(card.id)) return orbCache.get(card.id);
 		const set = new Set();
 		const add = arr => (Array.isArray(arr) ? arr : [arr]).forEach(a => { if (Number.isInteger(a) && a >= 0) set.add(a); });
@@ -149,7 +150,9 @@
 	];
 	const turnsCache = new Map();
 	// 技能里所有限时效果：[{ turns, kinds:Set }]
+	const skillsReady = () => typeof Skills !== 'undefined' && Skills.length > 1000;
 	function timedEffects(card) {
+		if (!skillsReady()) return [];
 		if (turnsCache.has(card.id)) return turnsCache.get(card.id);
 		const out = [];
 		const collectKinds = (node, set) => {
@@ -274,7 +277,7 @@
 		let impartFilled = false;
 		function fillImpart() {
 			const impartOf = MyPDC.impart?.impartOf;
-			if (impartFilled || !impartOf || !(Cards?.length > 100)) return;
+			if (impartFilled || !impartOf || !(Cards?.length > 100) || !skillsReady()) return;
 			impartFilled = true;
 			const impartable = new Set();
 			Cards.forEach(c => { if (c?.enabled) impartOf(c)?.forEach(a => impartable.add(a)); });

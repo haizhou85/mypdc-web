@@ -7,8 +7,10 @@
 
 	// 卡片主动技能赋予的觉醒（没有则 null）
 	const cache = new Map();
+	const skillsReady = () => typeof Skills !== 'undefined' && Skills.length > 1000;
 	function impartOf(card) {
 		if (!card || !card.activeSkillId) return null;
+		if (!skillsReady()) return null; // 技能数据还没读完：不缓存，稍后再查
 		if (cache.has(card.id)) return cache.get(card.id);
 		let found = null;
 		const walk = n => {
@@ -137,6 +139,12 @@
 		document.body.classList.toggle('mypdc-impart-on', state.on);
 	}
 	window.addEventListener('load', buildToggle);
+	// 技能数据读完后，如果开关是开着的，重新计算一次队伍
+	const waitSkills = setInterval(() => {
+		if (!skillsReady()) return;
+		clearInterval(waitSkills);
+		if (state.on && typeof refreshAll === 'function' && typeof formation !== 'undefined') refreshAll(formation);
+	}, 300);
 
 	MyPDC.impart = { state, impartOf };
 })();
