@@ -161,3 +161,51 @@ const MyPDC = (function () {
 		onTeamUpdate: fn => listeners.push(fn),
 	};
 })();
+
+// 手机：固定宽度的区块（编队 6/7 列、属性选择、宠物信息等）比屏幕宽时按屏宽等比缩放
+(function () {
+	const SELECTORS = [
+		'.formation-box',
+		'.edit-box .search-box #search-attr',
+		'.edit-box .search-box .type-list',
+		'.edit-box .search-box .selected-awokens-div',
+		'.edit-box .search-box .special-filter-list > li',
+		'.edit-box .monsterinfo-box',
+		'.edit-box .id-string-search',
+		'.edit-box .setting-box .row-mon-id',
+		'.edit-box .setting-box .row-mon-latent',
+		'.edit-box .setting-box .row-ability',
+		'.edit-box .button-box',
+	];
+	const isPhone = () => window.innerWidth <= 700;
+	function fitOne(node) {
+		node.style.zoom = '';
+		if (!isPhone() || node.offsetParent === null) return;
+		const W = document.documentElement.clientWidth;
+		const r = node.getBoundingClientRect();
+		const natural = Math.max(node.scrollWidth, r.width);
+		const left = Math.max(0, r.left);
+		const avail = W - left - Math.min(left, 8);
+		if (natural > avail + 1) node.style.zoom = (avail / natural).toFixed(4);
+	}
+	let pending = false;
+	function fitAll() {
+		if (pending) return;
+		pending = true;
+		requestAnimationFrame(() => {
+			pending = false;
+			SELECTORS.forEach(sel => document.querySelectorAll(sel).forEach(fitOne));
+		});
+	}
+	window.addEventListener('load', () => {
+		fitAll();
+		const box = document.querySelector('.edit-box');
+		if (box) new MutationObserver(fitAll).observe(box, { attributes: true, attributeFilter: ['class'] });
+		document.addEventListener('toggle', fitAll, true);
+		document.getElementById('form-id-search')?.addEventListener('change', () => setTimeout(fitAll, 50));
+		MyPDC.onTeamUpdate(fitAll);
+	});
+	window.addEventListener('resize', fitAll);
+	window.addEventListener('orientationchange', () => setTimeout(fitAll, 300));
+	MyPDC.fit = fitAll;
+})();

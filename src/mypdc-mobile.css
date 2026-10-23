@@ -1,0 +1,64 @@
+@charset "utf-8";
+/* 我的 PDC：手机适配。页面按设备实际宽度显示（上游固定 664px 宽，手机上整体缩小到约 60%）。
+   只有固定宽度的部分（编队 6 列头像、宠物编辑区）按屏宽等比缩放，其余文字、按钮按正常大小显示。 */
+@media (max-width: 700px) {
+	body { overflow-x: hidden; }
+	/* 编辑窗口：去掉 664px 最小宽度，按屏宽排版 */
+	.edit-box {
+		min-width: 0 !important;
+		width: 100% !important;
+	}
+	.edit-box .search-box, .edit-box .setting-box { padding-left: 6px; padding-right: 6px; }
+	/* 顶部控制栏：按钮加大、可换行 */
+	.control-box { font-size: 15px; }
+	.control-box button, .control-box select { font-size: 15px; min-height: 34px; }
+	.control-box > div { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
+	.mypdc-credit { display: block; width: 100%; font-size: 11px; margin: 2px 0; }
+
+	/* 我加的面板：触控尺寸 */
+	.mypdc-chip { font-size: 15px; padding: 6px 12px; border-radius: 18px; }
+	.mypdc-chip-group { gap: 6px; }
+	.mypdc-chip-title { display: block; width: 100%; min-width: 0; margin-top: 4px; }
+	.mypdc-skill-filter, .mypdc-sort-cfg { font-size: 15px; }
+	.mypdc-skill-filter summary, .mypdc-sort-cfg summary { padding: 6px 0; font-size: 16px; }
+	.mypdc-row { gap: 8px 14px; }
+	.mypdc-row input[type=checkbox] { width: 20px; height: 20px; vertical-align: middle; }
+	.mypdc-row select, .mypdc-row input[type=number], .mypdc-row button { font-size: 15px; min-height: 32px; }
+	.mypdc-impart-icon { zoom: 1.1; }
+	.mypdc-hint { font-size: 12px; }
+
+	/* 列表：行更高，点起来更容易 */
+	.mypdc-list-table { font-size: 14px; }
+	.mypdc-list-table td { padding: 6px 6px; }
+	.mypdc-list-icon > * { zoom: 0.55; }
+	body.mypdc-listview .mypdc-list-wrap { height: 55vh; }
+
+	.mypdc-impart-toggle { font-size: 16px; }
+	.mypdc-impart-toggle input { width: 20px; height: 20px; vertical-align: middle; }
+
+	/* 技能标题：名称独占一行，等级/回合放到下一行，不再被挤成好几行 */
+	.edit-box .skill-box .skill-title {
+		grid-template-columns: max-content 1fr;
+		row-gap: 2px;
+		padding-bottom: 4px;
+	}
+	.edit-box .skill-box .skill-title .skill-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.edit-box .skill-box .skill-title > :last-child:not(.skill-name) { grid-column: 1 / -1; justify-self: end; }
+
+	/* 列表：名称最多两行 */
+	.mypdc-list-table td.mypdc-list-name { min-width: 9em; max-width: 11em; font-size: 13px; line-height: 1.3; }
+	.mypdc-list-table td.mypdc-list-name > span {
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	/* 悬浮的减伤模拟按钮：缩成小圆按钮，避免挡住队员数值 */
+	.mypdc-open-btn {
+		width: 48px; height: 48px; padding: 0;
+		border-radius: 50%;
+		font-size: 0; right: 10px; bottom: 12px;
+	}
+	.mypdc-open-btn::before { content: '🛡'; font-size: 22px; }
+}

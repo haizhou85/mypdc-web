@@ -481,7 +481,7 @@
 			} },
 				el('td', { class: 'mypdc-list-icon' }, icon),
 				el('td', null, card.id),
-				el('td', { class: 'mypdc-list-name' }, cardName(card.id)),
+				el('td', { class: 'mypdc-list-name' }, el('span', null, cardName(card.id))),
 				el('td', null, attrs.map(a => el('span', { class: `mypdc-attr mypdc-attr-${a}` }, ATTR_CHARS[a]))),
 				el('td', null, card.rarity),
 				el('td', { class: 'mypdc-num' }, st ? fmt(st.hp) : '-'),
