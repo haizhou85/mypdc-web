@@ -320,3 +320,6 @@ body.mypdc-listview .mypdc-list-wrap {
 }
 body:not(.mypdc-listview) .mypdc-sort-bar { display: flex; }
 .mypdc-sort-bar select, .mypdc-sort-bar button { font-size: 13px; }
+
+/* 不固定“搜索列表 + 宠物信息”这一块：它太高，会挡住下面的详细信息 */
+body.use-sticky .sticky-box { position: static !important; }
