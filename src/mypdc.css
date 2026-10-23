@@ -348,3 +348,5 @@ body.mypdc-capture.block-width-7 .formation-box {
 }
 body.mypdc-capture .team-bigbox { display: block !important; }
 .search-box .sort-div::before, .search-box .sort-div::after { content: none !important; display: none !important; }
+/* “关闭搜索 / 清空搜索 / 分享搜索”这一排不需要：折叠标题可关闭，各栏有自己的清除按钮 */
+.search-box .control-div > .button-div { display: none !important; }
