@@ -350,3 +350,19 @@ body.mypdc-capture .team-bigbox { display: block !important; }
 .search-box .sort-div::before, .search-box .sort-div::after { content: none !important; display: none !important; }
 /* “关闭搜索 / 清空搜索 / 分享搜索”这一排不需要：折叠标题可关闭，各栏有自己的清除按钮 */
 .search-box .control-div > .button-div { display: none !important; }
+
+/* ---------- 觉醒赋予 ---------- */
+.mypdc-impart-toggle { margin-left: 8px; font-size: 15px; white-space: nowrap; }
+.mypdc-impart-filter { margin: 6px 0 2px; padding-top: 4px; border-top: 1px dashed var(--mypdc-line); }
+.mypdc-impart-filter .mypdc-hint { margin: 0; }
+.mypdc-impart-icons { display: flex; flex-wrap: wrap; gap: 3px; margin-left: 5.5em; }
+.mypdc-impart-icon {
+	cursor: pointer;
+	opacity: 0.45;
+	zoom: 0.85;
+	border-radius: 6px;
+}
+.mypdc-impart-icon.on { opacity: 1; outline: 3px solid #ff9800; }
+/* 队员觉醒里由武器赋予的觉醒 */
+.awoken-icon.mypdc-imparted { outline: 2px solid #ff9800; border-radius: 4px; }
+@media (max-width: 760px) { .mypdc-impart-icons { margin-left: 0; } }

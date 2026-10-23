@@ -128,7 +128,7 @@
 		return typeof node.function === 'function' ? node.function : null;
 	}
 
-	const fstate = Object.assign({ chips: [], mode: 'and', maxCd: 0, turnsKind: '', minTurns: 0 }, load('skill-filter', {}));
+	const fstate = Object.assign({ chips: [], mode: 'and', maxCd: 0, turnsKind: '', minTurns: 0, impartAw: [], impartMode: 'and', impartAny: false }, load('skill-filter', {}));
 
 	// ---------- 技能持续回合 ----------
 	const K = typeof SkillKinds === 'object' ? SkillKinds : {};
@@ -195,6 +195,18 @@
 		let result = cards;
 		if (fstate.maxCd > 0) result = result.filter(c => minCd(c) <= fstate.maxCd);
 		if (fstate.minTurns > 0) result = result.filter(c => maxTurns(c) >= fstate.minTurns);
+		// 觉醒赋予（武器技能）
+		if (fstate.impartAny || fstate.impartAw.length) {
+			const impartOf = MyPDC.impart?.impartOf;
+			result = result.filter(c => {
+				const imp = impartOf?.(c);
+				if (!imp) return false;
+				if (!fstate.impartAw.length) return true;
+				return fstate.impartMode === 'or'
+					? fstate.impartAw.some(a => imp.includes(a))
+					: fstate.impartAw.every(a => imp.includes(a));
+			});
+		}
 		const fns = fstate.chips.map(key => chipIndex.get(key)?.fn).filter(Boolean);
 		if (!fns.length) return result;
 		if (fstate.mode === 'or') {
@@ -225,7 +237,11 @@
 		const chipButtons = [];
 		const refresh = () => {
 			chipButtons.forEach(b => b.classList.toggle('on', fstate.chips.includes(b.dataset.key)));
-			const n = fstate.chips.length + (fstate.maxCd > 0 ? 1 : 0) + (fstate.minTurns > 0 ? 1 : 0);
+			const n = fstate.chips.length + (fstate.maxCd > 0 ? 1 : 0) + (fstate.minTurns > 0 ? 1 : 0) + fstate.impartAw.length + (fstate.impartAny ? 1 : 0);
+			fillImpart();
+			impartIcons.forEach(i => i.classList.toggle('on', fstate.impartAw.includes(+i.dataset.awokenIcon)));
+			impartAnyBox.checked = fstate.impartAny;
+			impartModeSel.value = fstate.impartMode;
 			countLabel.textContent = n ? `（已选 ${n} 项）` : '';
 		};
 
@@ -249,6 +265,48 @@
 		// 去掉已失效的选项
 		fstate.chips = fstate.chips.filter(k => chipIndex.has(k));
 
+		const awName = a => {
+			try { return localTranslating.skill_parse.awokens[a]({ icon: '' }).textContent.trim(); } catch (e) { return ''; }
+		};
+		// 觉醒赋予：只列出有武器能赋予的觉醒（怪物数据读完后再填充）
+		const impartIcons = [];
+		const impartIconBox = el('div', { class: 'mypdc-impart-icons' });
+		let impartFilled = false;
+		function fillImpart() {
+			const impartOf = MyPDC.impart?.impartOf;
+			if (impartFilled || !impartOf || !(Cards?.length > 100)) return;
+			impartFilled = true;
+			const impartable = new Set();
+			Cards.forEach(c => { if (c?.enabled) impartOf(c)?.forEach(a => impartable.add(a)); });
+			const orderOf = typeof official_awoken_sorting !== 'undefined' && Array.isArray(official_awoken_sorting) ? official_awoken_sorting : [];
+			const list = [...impartable].sort((a, b) => {
+				const ia = orderOf.indexOf(a), ib = orderOf.indexOf(b);
+				return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || a - b;
+			});
+			fstate.impartAw = fstate.impartAw.filter(a => impartable.has(a));
+			list.forEach(a => {
+				const b = el('button', { type: 'button', class: 'awoken-icon mypdc-impart-icon', 'data-awoken-icon': a,
+					onmouseenter: e => { if (!e.currentTarget.title) e.currentTarget.title = awName(a); },
+					onclick: () => {
+						const i = fstate.impartAw.indexOf(a);
+						if (i >= 0) fstate.impartAw.splice(i, 1); else fstate.impartAw.push(a);
+						saveF(); refresh(); runSearch();
+					} });
+				impartIcons.push(b);
+				impartIconBox.append(b);
+			});
+		}
+		const impartAnyBox = el('input', { type: 'checkbox', onchange: e => { fstate.impartAny = e.target.checked; saveF(); refresh(); runSearch(); } });
+		const impartModeSel = el('select', { onchange: e => { fstate.impartMode = e.target.value; saveF(); if (fstate.impartAw.length) runSearch(); } },
+			el('option', { value: 'and' }, '全部(AND)'), el('option', { value: 'or' }, '任一(OR)'));
+		const impartBox = el('div', { class: 'mypdc-impart-filter' },
+			el('div', { class: 'mypdc-row' },
+				el('span', { class: 'mypdc-chip-title' }, '觉醒赋予'),
+				el('label', null, impartAnyBox, ' 有觉醒赋予技能'),
+				el('label', null, '所选觉醒 ', impartModeSel),
+				el('span', { class: 'mypdc-hint' }, '点觉醒图标：找能赋予这些觉醒的武器')),
+			impartIconBox);
+
 		const panel = el('details', { class: 'mypdc-skill-filter', open: load('skill-filter-open', true) },
 			el('summary', null, '★主动技能筛选', countLabel),
 			el('div', { class: 'mypdc-row' },
@@ -269,14 +327,16 @@
 				el('button', { type: 'button', onclick: () => clearAll() }, '清除技能条件'),
 			),
 			groups,
+			impartBox,
 			el('div', { class: 'mypdc-hint' }, '点选后自动重新搜索，可以和上面的属性、类型、觉醒条件一起用。“生成珠子”包括转珠、洗版、随机产珠和固定位置生成，多选时按上面的 AND/OR 关系。更细的技能条件在下面的“特殊搜索”里。'),
 		);
-		panel.addEventListener('toggle', () => save('skill-filter-open', panel.open));
+		panel.addEventListener('toggle', () => { save('skill-filter-open', panel.open); refresh(); });
+		document.querySelector('.search-box')?.addEventListener('toggle', refresh);
 		anchor.before(panel);
 		refresh();
 
 		function resetState() {
-			Object.assign(fstate, { chips: [], maxCd: 0, mode: 'and', turnsKind: '', minTurns: 0 }); saveF();
+			Object.assign(fstate, { chips: [], maxCd: 0, mode: 'and', turnsKind: '', minTurns: 0, impartAw: [], impartMode: 'and', impartAny: false }); saveF();
 			panel.querySelectorAll('input[type=number]').forEach(i => { i.value = ''; });
 			panel.querySelector('select').value = 'and';
 			panel.querySelector('.mypdc-turns-kind').value = '';
@@ -451,7 +511,7 @@
 		return o.attrs.every(a => !a) && !o.types.length && !o.rares.length && !o.awokens.length && !o.sawokens.length &&
 			!o.canAssist && !o.canLv110 && !o.is8Latent && !o.notWeapon &&
 			o.specialFilters.every(f => !f || f.every(n => !n)) &&
-			!fstate.chips.length && !fstate.maxCd && !fstate.minTurns;
+			!fstate.chips.length && !fstate.maxCd && !fstate.minTurns && !fstate.impartAw.length && !fstate.impartAny;
 	}
 	let searchTimer = null;
 	function autoSearch() {
