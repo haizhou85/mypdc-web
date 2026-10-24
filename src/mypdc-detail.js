@@ -96,7 +96,7 @@
 			el('label', { class: 'mypdc-icons-toggle' },
 				el('input', { type: 'checkbox', checked: state.icons, onchange: e => { state.icons = e.target.checked; save('skill-icons', state.icons); apply(); } }),
 				' 技能说明显示图标'));
-		panel.querySelector('.mypdc-hint')?.before(row);
+		panel.append(row);
 	}));
 
 	MyPDC.detail = { similarRandom };

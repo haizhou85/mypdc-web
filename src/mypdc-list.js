@@ -469,7 +469,6 @@
 		{ key: 'hp', title: 'HP', value: c => S.stats(c)?.hp ?? 0 },
 		{ key: 'atk', title: '攻击', value: c => S.stats(c)?.atk ?? 0 },
 		{ key: 'rcv', title: '回复', value: c => S.stats(c)?.rcv ?? 0 },
-		{ key: 'teamhp', title: '队伍中HP', value: c => S.teamHp(c) },
 		{ key: 'cd', title: '最短CD', short: 'CD', value: c => minCd(c), asc: true },
 		{ key: 'turns', title: '持续', value: c => maxTurns(c) },
 		{ key: 'awoken', title: '觉醒 / 超觉醒' },
@@ -620,7 +619,6 @@
 					el('td', { class: 'mypdc-num' }, st ? fmt(st.hp) : '-'),
 					el('td', { class: 'mypdc-num' }, st ? fmt(st.atk) : '-'),
 					el('td', { class: 'mypdc-num' }, st ? fmt(st.rcv) : '-'),
-					el('td', { class: 'mypdc-num' }, fmt(S.teamHp(card))),
 					el('td', null, cd),
 					turnsTd(),
 					el('td', { class: 'mypdc-list-awoken' }, awoken())));

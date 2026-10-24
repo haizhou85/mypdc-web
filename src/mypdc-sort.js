@@ -173,17 +173,6 @@
 		const select = (key, options) => el('select', { onchange: onChange(key, num) },
 			options.map(([v, t]) => el('option', { value: v, selected: cfg[key] === v }, t)));
 
-		const teamSel = el('select', { onchange: onChange('teamIdx', num) });
-		const teamLabel = el('label', null, '参照 ', teamSel);
-		const refreshTeamSel = () => {
-			const n = formation?.teams?.length || 1;
-			teamSel.innerHTML = '';
-			for (let i = 0; i < n; i++) teamSel.add(new Option(`队伍${i + 1}`, i));
-			if (cfg.teamIdx >= n) cfg.teamIdx = 0;
-			teamSel.value = cfg.teamIdx;
-			teamLabel.classList.toggle('display-none', n < 2);
-		};
-
 		const panel = el('details', { class: 'mypdc-sort-cfg', open: load('sort-cfg-open', true) },
 			el('summary', null, '★能力值计算条件'),
 			el('div', { class: 'mypdc-row' },
@@ -202,21 +191,14 @@
 				el('label', null, '部位破坏 ', el('input', { type: 'number', min: 0, max: 10, value: cfg.brokens, style: 'width:3.5em', onchange: onChange('brokens', num) }), '个'),
 			),
 			el('div', { class: 'mypdc-row' },
-				el('span', { class: 'mypdc-label' }, '队伍中HP：'),
-				check('useLeader', '队长技HP倍率'),
-				check('useTeamHp', '全队HP觉醒'),
-				teamLabel,
 				el('label', { title: '填 0 关闭。填入数值后，所有宠物都按这个基础HP计算，只比较觉醒带来的倍率效果' }, '统一基础HP ',
 					el('input', { type: 'number', min: 0, step: 1000, value: cfg.uniformBase, style: 'width:6em', onchange: onChange('uniformBase', num) }),
 					' (0=关闭)')),
-			el('div', { class: 'mypdc-hint' }, '列表里的能力值按这些条件计算，点表头排序。“队伍中HP”= 加入当前队伍后的HP（乘队长技倍率和全队HP觉醒，不含徽章）。选中宠物时，下方详细信息的加蛋也会按“满加蛋”设为 +891 或 +297。'),
 		);
 		panel.addEventListener('toggle', () => save('sort-cfg-open', panel.open));
 		sortDiv.after(panel);
-		refreshTeamSel();
 
 		MyPDC.onTeamUpdate(() => {
-			refreshTeamSel();
 			teamCache = new Map();
 			listeners.forEach(fn => fn());
 		});
