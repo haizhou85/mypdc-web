@@ -61,4 +61,15 @@
 		font-size: 0; right: 10px; bottom: 12px;
 	}
 	.mypdc-open-btn::before { content: '🛡'; font-size: 22px; }
+
+	/* 宠物详情：技能标题收成一行（技能等级输入和 1~5 按钮、原文/合并开关不显示，只留回合数） */
+	.edit-box .skill-box .skill-title .skill-level-label,
+	.edit-box .skill-box .skill-title .m-skill-lv-1,
+	.edit-box .skill-box .skill-title .m-skill-lv-max,
+	.edit-box .skill-box .skill-title .skill-parse-control { display: none !important; }
+	.edit-box .skill-box .skill-title .skill-cd-control { font-size: 0; }
+	.edit-box .skill-box .skill-title .skill-cd-control .skill-cd { font-size: 18px; }
+	.edit-box .skill-box .skill-title { grid-template-columns: max-content 1fr max-content; padding-bottom: 0; }
+	.edit-box .skill-box .skill-title > :last-child:not(.skill-name) { grid-column: auto; }
+	.edit-box .skill-datail-parsed { font-size: 15px; }
 }

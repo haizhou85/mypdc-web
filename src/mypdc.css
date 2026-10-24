@@ -357,3 +357,38 @@ body.mypdc-merged-card .edit-box .setting-box .ability-box {
 .awoken-icon.mypdc-imparted { outline: 2px solid #ff9800; border-radius: 4px; }
 @media (max-width: 760px) { .mypdc-impart-icons { margin-left: 0; } }
 body.mypdc-listview .mypdc-list-wrap.mypdc-empty { display: none; }
+
+/* ---------- 宠物详情：精简，手机上尽量一屏放下 ---------- */
+/* 不显示：需要经验值、Lv1～Lv99 等级按钮、消耗、加蛋 ×0 */
+.edit-box .row-mon-level .m-level-exp,
+.edit-box .row-mon-level .subrow:nth-child(2),
+.edit-box .row-mon-cost,
+.edit-box .row-mon-plus .m-plus-fast-setting[value="0"] { display: none !important; }
+/* 三维 | 加蛋 | ×1 ×3（竖排） | 等级 排成一行 */
+.edit-box .setting-box .row-ability { display: flex; align-items: flex-start; gap: 6px; flex-wrap: nowrap; }
+.edit-box .row-mon-plus { display: flex !important; align-items: flex-start; gap: 4px; }
+.edit-box .row-mon-plus::before { display: none !important; }
+.edit-box .row-mon-plus .m-plus-fast-setting { display: block; height: 28px; min-width: 34px; margin: 2px 0; }
+.edit-box .row-mon-plus .m-plus-fast-setting[value="1"] { margin-top: calc(var(--char-border-width, 3px) + 2px); }
+.edit-box .row-mon-plus { flex-wrap: wrap; width: min-content; }
+.edit-box .row-mon-plus .plus-box { flex: none; }
+.edit-box .row-mon-plus { display: grid !important; grid-template-columns: auto auto; grid-template-rows: auto auto 1fr; column-gap: 4px; }
+.edit-box .row-mon-plus .plus-box { grid-row: 1 / 4; }
+.edit-box .row-mon-level { margin-left: 4px !important; }
+
+/* 技能说明：默认不显示图标和 6 格队伍位置标记，文字已能表达意思 */
+body:not(.mypdc-skill-icons) .edit-box .skill-datail-parsed :is(.team-flags, icon.icon-skill, icon.attr-icon, icon.awoken-icon, icon.type-icon),
+body:not(.mypdc-skill-icons) .edit-box .skill-datail-parsed icon.orb:not(.board icon.orb) { display: none !important; }
+/* 盘面示意图缩小 */
+.edit-box .skill-datail-parsed .board-set { zoom: 0.6; }
+/* 合并后的随机技能 */
+.mypdc-random-inline { margin: 2px 0 2px 1em; padding-left: 0.6em; border-left: 3px solid #c9a86a; }
+.mypdc-random-inline > li { margin: 2px 0; }
+.mypdc-random-inline .card-skill-list { margin: 0; }
+/* 三维数值不换行；等级框收窄 */
+.edit-box .row-mon-ability { flex: none; }
+.edit-box .row-mon-ability li { white-space: nowrap; }
+.edit-box .row-mon-level .m-level { width: 3.2em; }
+.edit-box .row-mon-level .subrow:first-child { white-space: nowrap; }
+/* 合并后的随机选项里不显示示意盘面（随机产珠的盘面只是举例） */
+.mypdc-random-inline :is(.merge-board, .board-set) { display: none !important; }
