@@ -273,9 +273,21 @@ body.mypdc-listview .mypdc-list-wrap {
 	text-align: center;
 	white-space: nowrap;
 }
-.mypdc-list-table tr { cursor: pointer; }
-.mypdc-list-table tr:hover td { background: #fff3e0; }
-.mypdc-list-table tr.mypdc-current td { background: #ffe0b2; }
+.mypdc-list-table tbody { cursor: pointer; }
+.mypdc-list-table tbody:hover td { background: #fff3e0; }
+.mypdc-list-table tbody.mypdc-current td { background: #ffe0b2; }
+/* 手机紧凑列表：第一行数值，第二行名称 + 觉醒 */
+.mypdc-list-table.mypdc-compact { table-layout: auto; }
+.mypdc-list-table.mypdc-compact th { padding: 4px 3px; }
+.mypdc-list-table.mypdc-compact td { padding: 3px 3px; }
+.mypdc-list-table.mypdc-compact tr.mypdc-r1 td { border-bottom: none; padding-bottom: 0; }
+.mypdc-list-table.mypdc-compact td.mypdc-list-icon { width: 1%; vertical-align: top; }
+.mypdc-list-table.mypdc-compact td.mypdc-list-awoken { white-space: normal; padding-top: 0; }
+.mypdc-list-table.mypdc-compact .mypdc-list-name {
+	font-size: 12px; color: #555; line-height: 1.3;
+	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 0; min-width: 100%;
+}
+.mypdc-list-table.mypdc-compact .mypdc-saw { margin-left: 4px; }
 .mypdc-list-table td.mypdc-num { text-align: right; font-variant-numeric: tabular-nums; }
 .mypdc-list-table td.mypdc-list-name {
 	text-align: left;

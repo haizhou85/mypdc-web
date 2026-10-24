@@ -470,10 +470,15 @@
 		{ key: 'atk', title: '攻击', value: c => S.stats(c)?.atk ?? 0 },
 		{ key: 'rcv', title: '回复', value: c => S.stats(c)?.rcv ?? 0 },
 		{ key: 'teamhp', title: '队伍中HP', value: c => S.teamHp(c) },
-		{ key: 'cd', title: '最短CD', value: c => minCd(c), asc: true },
+		{ key: 'cd', title: '最短CD', short: 'CD', value: c => minCd(c), asc: true },
 		{ key: 'turns', title: '持续', value: c => maxTurns(c) },
 		{ key: 'awoken', title: '觉醒 / 超觉醒' },
 	];
+	// 手机上显示的列（名称、觉醒放到每只宠物的第二行）
+	const COMPACT_KEYS = ['icon', 'id', 'hp', 'atk', 'rcv', 'cd'];
+	const isCompact = () => window.innerWidth <= 700;
+	let lastCompact = isCompact();
+	window.addEventListener('resize', () => { if (isCompact() !== lastCompact) { lastCompact = isCompact(); render(); } });
 
 	function selectCard(id) {
 		const input = document.getElementById('card-id');
@@ -561,14 +566,17 @@
 		wrap.classList.toggle('mypdc-empty', !heads.length);
 		if (!heads.length) return;
 
-		const head = el('tr', null, COLUMNS.map(c => {
+		// 手机：去掉不必要的列，名称和觉醒放在第二行，整张表不需要左右滚动
+		const compact = isCompact();
+		const cols = compact ? COLUMNS.filter(c => COMPACT_KEYS.includes(c.key)) : COLUMNS;
+		const head = el('tr', null, cols.map(c => {
 			const active = c.key === lstate.key;
 			return el('th', {
 				class: (c.value ? 'mypdc-sortable' : '') + (active ? ' mypdc-sorted' : ''),
 				onclick: c.value ? () => setSort(c.key) : null,
-			}, c.title, active ? (lstate.desc ? ' ▼' : ' ▲') : '');
+			}, compact && c.short ? c.short : c.title, active ? (lstate.desc ? ' ▼' : ' ▲') : '');
 		}));
-		const table = el('table', { class: 'mypdc-list-table' }, head);
+		const table = el('table', { class: 'mypdc-list-table' + (compact ? ' mypdc-compact' : '') }, el('thead', null, head));
 		const currentId = parseInt(document.getElementById('card-id')?.value, 10);
 
 		rows.slice(0, shown).forEach(({ li, card }) => {
@@ -577,28 +585,47 @@
 			icon.removeAttribute('href');
 			const attrs = card.attrs.filter(a => a >= 0 && a <= 5);
 			const supers = (card.superAwakenings || []);
-			const tr = el('tr', { class: card.id === currentId ? 'mypdc-current' : null, onclick: () => {
+			const cd = Number.isFinite(minCd(card)) ? minCd(card) : '-';
+			const turnsTd = () => el('td', { title: (TURN_KINDS.find(k => k[0] === fstate.turnsKind)?.[1] || '') + '最长持续回合' }, maxTurns(card) || '-');
+			const awoken = () => [
+				awokenIcons(card.awakenings, 'mypdc-aw'),
+				supers.length ? awokenIcons(supers, 'mypdc-aw mypdc-saw') : null,
+				st?.sawoken ? el('span', { class: 'mypdc-saw-pick', title: 'HP计算采用的超觉醒' }, '超:', el('span', { class: 'awoken-icon', 'data-awoken-icon': st.sawoken })) : null,
+			];
+			const body = el('tbody', { class: card.id === currentId ? 'mypdc-current' : null, onclick: () => {
 				selectCard(card.id);
 				table.querySelectorAll('.mypdc-current').forEach(r => r.classList.remove('mypdc-current'));
-				tr.classList.add('mypdc-current');
-			} },
-				el('td', { class: 'mypdc-list-icon' }, icon),
-				el('td', null, card.id),
-				el('td', { class: 'mypdc-list-name' }, el('span', null, cardName(card.id))),
-				el('td', null, attrs.map(a => el('span', { class: `mypdc-attr mypdc-attr-${a}` }, ATTR_CHARS[a]))),
-				el('td', null, card.rarity),
-				el('td', { class: 'mypdc-num' }, st ? fmt(st.hp) : '-'),
-				el('td', { class: 'mypdc-num' }, st ? fmt(st.atk) : '-'),
-				el('td', { class: 'mypdc-num' }, st ? fmt(st.rcv) : '-'),
-				el('td', { class: 'mypdc-num' }, fmt(S.teamHp(card))),
-				el('td', null, Number.isFinite(minCd(card)) ? minCd(card) : '-'),
-				el('td', { title: (TURN_KINDS.find(k => k[0] === fstate.turnsKind)?.[1] || '') + '最长持续回合' }, maxTurns(card) || '-'),
-				el('td', { class: 'mypdc-list-awoken' },
-					awokenIcons(card.awakenings, 'mypdc-aw'),
-					supers.length ? awokenIcons(supers, 'mypdc-aw mypdc-saw') : null,
-					st?.sawoken ? el('span', { class: 'mypdc-saw-pick', title: 'HP计算采用的超觉醒' }, '超:', el('span', { class: 'awoken-icon', 'data-awoken-icon': st.sawoken })) : null),
-			);
-			table.append(tr);
+				body.classList.add('mypdc-current');
+			} });
+			if (compact) {
+				body.append(
+					el('tr', { class: 'mypdc-r1' },
+						el('td', { class: 'mypdc-list-icon', rowspan: 2 }, icon),
+						el('td', null, card.id),
+						el('td', { class: 'mypdc-num' }, st ? fmt(st.hp) : '-'),
+						el('td', { class: 'mypdc-num' }, st ? fmt(st.atk) : '-'),
+						el('td', { class: 'mypdc-num' }, st ? fmt(st.rcv) : '-'),
+						el('td', null, cd)),
+					el('tr', { class: 'mypdc-r2' },
+						el('td', { class: 'mypdc-list-awoken', colspan: cols.length - 1 },
+							el('div', { class: 'mypdc-list-name' }, cardName(card.id)),
+							awoken())));
+			} else {
+				body.append(el('tr', null,
+					el('td', { class: 'mypdc-list-icon' }, icon),
+					el('td', null, card.id),
+					el('td', { class: 'mypdc-list-name' }, el('span', null, cardName(card.id))),
+					el('td', null, attrs.map(a => el('span', { class: `mypdc-attr mypdc-attr-${a}` }, ATTR_CHARS[a]))),
+					el('td', null, card.rarity),
+					el('td', { class: 'mypdc-num' }, st ? fmt(st.hp) : '-'),
+					el('td', { class: 'mypdc-num' }, st ? fmt(st.atk) : '-'),
+					el('td', { class: 'mypdc-num' }, st ? fmt(st.rcv) : '-'),
+					el('td', { class: 'mypdc-num' }, fmt(S.teamHp(card))),
+					el('td', null, cd),
+					turnsTd(),
+					el('td', { class: 'mypdc-list-awoken' }, awoken())));
+			}
+			table.append(body);
 		});
 		wrap.append(table);
 		if (rows.length > shown) {
