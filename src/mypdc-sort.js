@@ -106,7 +106,12 @@
 		if (!card || !card.enabled) return null;
 		if (cache.has(card.id)) return cache.get(card.id);
 		const options = [0];
-		if (cfg.superAwoken && (solo || teamsCount === 3)) options.push(...(card.superAwakenings || []));
+		if (cfg.superAwoken && (solo || teamsCount === 3)) {
+			// 自力（无辅助）和武装/共鸣（有辅助）不能同时生效：普通觉醒已有其中一个时，超觉醒选另一个没有意义，不作候选
+			const aw = card.awakenings;
+			options.push(...(card.superAwakenings || []).filter(sa =>
+				!(sa === 138 && aw.includes(139)) && !(sa === 139 && aw.includes(138))));
+		}
 		let best = null;
 		for (const sa of options) {
 			const r = statsWith(card, sa);
