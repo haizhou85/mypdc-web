@@ -619,7 +619,23 @@
 		render();
 	}
 
+	// ---------------- 一键清空全部筛选条件（标题栏右侧，与“取消”对称） ----------------
+	function clearAllFilters() {
+		document.querySelector('.search-box .search-clear')?.click(); // 上游条件 + 本站技能筛选（已监听）
+		const notWeapon = document.getElementById('not-weapon');
+		if (notWeapon) notWeapon.checked = false;
+		const str = document.querySelector('#form-string-search [name="search-string"]');
+		if (str) str.value = '';
+		autoSearch();
+	}
+	function buildClearAll() {
+		const title = document.querySelector('.edit-box .edit-box-title');
+		if (!title || title.querySelector('.mypdc-clear-all')) return;
+		title.append(el('button', { type: 'button', class: 'mypdc-clear-all brown-button', title: '清空所有搜索和筛选条件', onclick: clearAllFilters }, '清空条件'));
+	}
+
 	window.addEventListener('load', () => {
+		buildClearAll();
 		buildSkillFilter();
 		buildList();
 		setupAutoSearch();

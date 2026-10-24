@@ -392,3 +392,15 @@ body:not(.mypdc-skill-icons) .edit-box .skill-datail-parsed icon.orb:not(.board 
 .edit-box .row-mon-level .subrow:first-child { white-space: nowrap; }
 /* 合并后的随机选项里不显示示意盘面（随机产珠的盘面只是举例） */
 .mypdc-random-inline :is(.merge-board, .board-set) { display: none !important; }
+
+/* 标题栏右侧“清空条件”，与左侧“取消”对称 */
+.edit-box-title .mypdc-clear-all {
+	position: absolute;
+	right: 0;
+	top: 0;
+	font-size: 0.5em;
+	color: #fff;
+	font-weight: bold;
+	text-shadow: black 1px 1px 0, black -1px -1px 0, black 1px -1px 0, black -1px 1px 0;
+	cursor: pointer;
+}
