@@ -404,3 +404,18 @@ body:not(.mypdc-skill-icons) .edit-box .skill-datail-parsed icon.orb:not(.board 
 	text-shadow: black 1px 1px 0, black -1px -1px 0, black 1px -1px 0, black -1px 1px 0;
 	cursor: pointer;
 }
+
+/* ---------- 搜索栏精简 ---------- */
+/* 类型：AND/OR 开关放在“类型：”右边，图标换到下一行；去掉杀觉醒快捷按钮 */
+.search-box .types-div { display: flex; flex-wrap: wrap; align-items: center; }
+.search-box .types-div::before { order: 0; }
+.search-box .types-div #type-and-or, .search-box .types-div label[for="type-and-or"] { order: 1; }
+.search-box .types-div .type-list { order: 2; flex-basis: 100%; flex-wrap: wrap; }
+.search-box .types-div .latent-ul { display: none !important; }
+/* 去掉“使用官方觉醒排序”开关和快速开关一栏 */
+#show-official-awoken-sorting, label[for="show-official-awoken-sorting"],
+.search-box .fast-switch { display: none !important; }
+/* 觉醒搜索选项 */
+.mypdc-awoken-opts { margin: 4px 0; font-size: 0.95em; }
+/* 统一后的开关：文字与开关之间留点空隙 */
+input[type="checkbox"].switch-ipt + label[for^="mypdc-sw-"]::before { margin-right: 4px; }

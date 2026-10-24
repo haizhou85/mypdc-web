@@ -209,3 +209,41 @@ const MyPDC = (function () {
 	window.addEventListener('orientationchange', () => setTimeout(fitAll, 300));
 	MyPDC.fit = fitAll;
 })();
+
+// 统一用开关（toggle）样式：把 <label><input type=checkbox>文字</label> 改成上游的 input.switch-ipt + label 结构；
+// 上游搜索栏里剩下的普通勾选框也加上开关样式
+(function () {
+	let seq = 0;
+	function convertLabelWrapped(root) {
+		root.querySelectorAll('label > input[type="checkbox"]:not(.switch-ipt)').forEach(input => {
+			const label = input.parentElement;
+			if (!input.id) input.id = 'mypdc-sw-' + (++seq);
+			input.classList.add('switch-ipt');
+			label.htmlFor = input.id;
+			label.before(input);
+			// 去掉文字前多余的空格
+			const first = label.firstChild;
+			if (first && first.nodeType === 3) first.textContent = first.textContent.replace(/^\s+/, '');
+		});
+	}
+	const UPSTREAM = ['#fix-main-color', '#consider-equivalent-awoken', '#screenshot-transparent', '#change-swap-to-copy', '#use-side-mode'];
+	function convertUpstream() {
+		UPSTREAM.forEach(sel => {
+			const input = document.querySelector(sel);
+			if (input && input.type === 'checkbox' && input.nextElementSibling?.tagName === 'LABEL') input.classList.add('switch-ipt');
+		});
+	}
+	let pending = false;
+	function run() {
+		if (pending) return;
+		pending = true;
+		requestAnimationFrame(() => { pending = false; convertLabelWrapped(document); });
+	}
+	window.addEventListener('load', () => {
+		convertUpstream();
+		convertLabelWrapped(document);
+		new MutationObserver(muts => {
+			if (muts.some(m => [...m.addedNodes].some(n => n.nodeType === 1 && (n.matches?.('label') || n.querySelector?.('label > input[type="checkbox"]'))))) run();
+		}).observe(document.body, { childList: true, subtree: true });
+	});
+})();

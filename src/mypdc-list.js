@@ -250,12 +250,75 @@
 		return fns.reduce((cur, fn) => { try { return fn(cur); } catch (e) { console.error(e); return cur; } }, result);
 	}
 
-	// 接在上游 searchCards 之后，这样“开始搜索”的结果、数量、排序都包含技能筛选
+	// ---------- 觉醒搜索的两个选项（参考 PDC） ----------
+	// 溜：主动技能加速的回合数按 1 回合 = 1 个 SB 觉醒计算；觉醒赋予：武器技能赋予的觉醒也算作该卡的觉醒
+	const awOpt = Object.assign({ haste: false, impart: false }, load('awoken-opts', {}));
+	const SB = 21;
+	const hasteCache = new Map();
+	function hasteTurns(card) {
+		if (!skillsReady() || !card.activeSkillId) return 0;
+		if (hasteCache.has(card.id)) return hasteCache.get(card.id);
+		let best = 0;
+		const walk = n => {
+			if (Array.isArray(n)) { n.forEach(walk); return; }
+			if (!n || typeof n !== 'object') return;
+			if (n.kind === SkillKinds.SkillBoost) {
+				const v = Number(n.min?.value ?? n.min) || 0;
+				if (v > best) best = v;
+			}
+			for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v);
+		};
+		try { walk(skillParser(card.activeSkillId)); } catch (e) { /* 忽略 */ }
+		hasteCache.set(card.id, best);
+		return best;
+	}
+	function virtualAwakenings(card) {
+		let extra = null;
+		if (awOpt.haste) {
+			const t = hasteTurns(card);
+			if (t > 0) extra = Array(t).fill(SB);
+		}
+		if (awOpt.impart) {
+			const imp = MyPDC.impart?.impartOf(card);
+			if (imp) extra = (extra || []).concat(imp);
+		}
+		return extra ? card.awakenings.concat(extra) : null;
+	}
+
+	// 接在上游 searchCards 之后，这样搜索的结果、数量、排序都包含技能筛选
 	if (typeof searchCards === 'function') {
 		const originalSearch = searchCards;
-		searchCards = function () { // eslint-disable-line no-global-assign
+		searchCards = function (cards, options) { // eslint-disable-line no-global-assign
+			if ((awOpt.haste || awOpt.impart) && options?.awokens?.length) {
+				// 给上游一份“虚拟觉醒”的卡片副本，沿用上游的等效觉醒、超觉醒等判断，结果再换回原卡片
+				const virtual = cards.map(c => {
+					const aw = c && virtualAwakenings(c);
+					return aw ? Object.assign(Object.create(c), { awakenings: aw }) : c;
+				});
+				const found = originalSearch.call(this, virtual, options).map(c => Cards[c.id] || c);
+				return applySkillFilter(found);
+			}
 			return applySkillFilter(originalSearch.apply(this, arguments));
 		};
+	}
+
+	function buildAwokenOptions() {
+		const target = document.querySelector('.search-box .awoken-div .selected-awokens-div');
+		if (!target || document.querySelector('.mypdc-awoken-opts')) return;
+		const opt = (key, text, title) => el('label', { title },
+			el('input', { type: 'checkbox', checked: awOpt[key], onchange: e => { awOpt[key] = e.target.checked; save('awoken-opts', awOpt); MyPDC.list.autoSearch(); } }),
+			text);
+		target.before(el('div', { class: 'mypdc-awoken-opts mypdc-row' },
+			opt('haste', '溜技能回合数算作SB', '主动技能的加速回合数按 1 回合 = 1 个 SB 觉醒计算（搜 SB / SB+ 时有用）'),
+			opt('impart', '觉醒赋予算作觉醒', '武器技能赋予的觉醒也当作这张卡的觉醒来搜索')));
+	}
+
+	// 精简上游搜索栏：类型 AND/OR 挪到“类型：”右边；去掉杀觉醒快捷按钮、官方觉醒排序开关、快速开关一栏
+	function tidySearchBox() {
+		const fast = document.querySelector('.search-box .fast-switch');
+		fast?.querySelectorAll('input[type=checkbox]').forEach(i => { i.checked = false; });
+		const official = document.getElementById('show-official-awoken-sorting');
+		if (official?.checked) { official.checked = false; official.dispatchEvent(new Event('change')); }
 	}
 
 	const chipIndex = new Map();
@@ -635,6 +698,8 @@
 	}
 
 	window.addEventListener('load', () => {
+		tidySearchBox();
+		buildAwokenOptions();
 		buildClearAll();
 		buildSkillFilter();
 		buildList();
