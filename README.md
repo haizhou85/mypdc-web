@@ -1,4 +1,4 @@
-# 我的 PDC（mypdc-web）
+# LaLa个人使用的PAD工具（mypdc-web）
 
 自用的智龙迷城（Puzzle & Dragons）组队 / 伤害减伤计算网页，参考 PDC ダメージ計算 的功能。
 

@@ -43,6 +43,26 @@ done
 patch script.js 'const browser_i18n = navigator.language;' 'const browser_i18n = "zh-CN";'
 patch index.html 'let browser_i18n = (navigator.language||navigator.userLanguage);' 'let browser_i18n = "zh-CN";'
 
+# 网页名称
+SITE_NAME='LaLa个人使用的PAD工具'
+for page in index.html solo.html multi.html triple.html; do
+	patch "$page" '<title>智龙急速阵型</title>' "<title>$SITE_NAME</title>"
+done
+patch index.html '<h1 class="title">智龙急速阵型<br>Puzzle & Dragons Dash Formation</h1>' "<h1 class=\"title\">$SITE_NAME</h1>"
+for lang in "$OUT"/languages/*.js; do
+	[ "$(basename "$lang")" = "language-list.js" ] && continue
+	# 必须在语言文件调用 localisation() 之前改，否则标题已经按原名设置好了
+	python3 -I -c 'import sys; p,n=sys.argv[1:]; s=open(p,encoding="utf-8").read(); k="localisation(localTranslating);"; assert k in s, p; open(p,"w",encoding="utf-8").write(s.replace(k, "localTranslating.webpage_title = \""+n+"\";\n"+k, 1))' "$lang" "$SITE_NAME"
+done
+python3 -I - "$OUT/manifest.webmanifest" "$SITE_NAME" <<'PY'
+import json, sys
+p, name = sys.argv[1], sys.argv[2]
+m = json.load(open(p, encoding='utf-8-sig'))
+m['name'] = name
+m['short_name'] = 'LaLa PAD'
+open(p, 'w', encoding='utf-8').write(json.dumps(m, ensure_ascii=False, indent='\t'))
+PY
+
 echo "==> 重新生成离线缓存表"
 (cd "$OUT" && npm install --no-audit --no-fund --silent && node update-service-worker.js >/dev/null && rm -rf node_modules package-lock.json)
 
