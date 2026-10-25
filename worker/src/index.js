@@ -6,6 +6,7 @@
 // GET    /api/admin                     检查管理密码
 const ALLOWED_ORIGINS = [
 	'https://haizhou85.github.io',
+	'https://lalapad.pages.dev',
 	'http://localhost:8765',
 	'http://localhost:8000',
 ];
@@ -19,7 +20,7 @@ const PAGES = { 1: 'solo', 2: 'multi', 3: 'triple' };
 function cors(req) {
 	const origin = req.headers.get('Origin') || '';
 	return {
-		'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+		'Access-Control-Allow-Origin': (ALLOWED_ORIGINS.includes(origin) || /^https:\/\/[a-z0-9-]+\.lalapad\.pages\.dev$/.test(origin)) ? origin : ALLOWED_ORIGINS[0],
 		'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
 		'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Key',
 		'Access-Control-Max-Age': '86400',
