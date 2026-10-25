@@ -487,3 +487,16 @@ html.mypdc-team-loading body { opacity: 0.3; pointer-events: none; }
 }
 .mypdc-team-login p { margin: 0 0 6px; }
 .mypdc-panel .mypdc-team-login input { flex: 1; min-width: 0; font-size: 16px; padding: 6px 8px; margin: 0; }
+
+/* ---------- 编队：选择要开的盾 / HP上限技能 ---------- */
+.mypdc-skilluse { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 4px 0; font-size: 14px; }
+.mypdc-skilluse-pick { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; }
+.mypdc-skilluse-pick > span { white-space: nowrap; }
+.mypdc-skilluse-pick select { max-width: 100%; min-width: 0; font-size: 14px; }
+.mypdc-skilluse-result { flex-basis: 100%; }
+.mypdc-skilluse-result b { color: #ffd54f; }
+.mypdc-skilluse-base, .mypdc-skilluse-note { color: #bbb; font-size: 12px; }
+@media (max-width: 760px) {
+	.mypdc-skilluse-pick { flex-basis: 100%; }
+	.mypdc-skilluse-pick select { flex: 1; font-size: 15px; min-height: 32px; }
+}
