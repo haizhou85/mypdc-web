@@ -62,6 +62,7 @@ p, name = sys.argv[1], sys.argv[2]
 m = json.load(open(p, encoding='utf-8-sig'))
 m['name'] = name
 m['short_name'] = 'LaLa PAD'
+m['start_url'] = './solo.html'
 open(p, 'w', encoding='utf-8').write(json.dumps(m, ensure_ascii=False, indent='\t'))
 PY
 
@@ -70,6 +71,22 @@ patch service-worker.js "	const url = new URL(event.request.url);
 	const pathname = url.pathname;" "	const url = new URL(event.request.url);
 	if (url.origin !== location.origin) return;
 	const pathname = url.pathname;"
+
+# 首页直接打开单人编队页面（保留网址后面的参数，例如 ?team=、#teams）
+cat > "$OUT/index.html" <<HTML
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$SITE_NAME</title>
+<link rel="manifest" href="manifest.webmanifest">
+<script>location.replace('solo.html' + location.search + location.hash);</script>
+<meta http-equiv="refresh" content="0; url=solo.html">
+</head>
+<body><a href="solo.html">打开 $SITE_NAME</a></body>
+</html>
+HTML
 
 echo "==> 重新生成离线缓存表"
 (cd "$OUT" && npm install --no-audit --no-fund --silent && node update-service-worker.js >/dev/null && rm -rf node_modules package-lock.json)
