@@ -300,3 +300,50 @@ const MyPDC = (function () {
 		if (setting && swap && swapLabel) setting.append(swap, swapLabel);
 	});
 })();
+
+// “解除辅助”改成开关“辅助失效”：点一次让所有辅助失效（按没有辅助重新计算），再点一次把原来的辅助恢复
+(function () {
+	const state = { active: false, backup: null };
+	function snapshot() { // [队伍][位置] → 辅助 Member
+		return formation.teams.map(team => team[1].map(m => m));
+	}
+	function setActive(on) {
+		const btn = document.getElementById('btn-remove-assist');
+		if (on) {
+			state.backup = snapshot();
+			state.active = true;
+			formation.removeAssist(); // 上游：清空辅助、更新网址并全部重算
+		} else {
+			const backup = state.backup;
+			state.active = false;
+			state.backup = null;
+			if (backup) {
+				formation.teams.forEach((team, t) => team[1].forEach((m, i) => {
+					// 失效期间新放上去的辅助保留，原来空着的位置恢复
+					if (!(m?.id > 0) && backup[t]?.[i]) team[1][i] = backup[t][i];
+				}));
+			}
+			if (typeof createNewUrl === 'function') createNewUrl();
+			if (typeof refreshAll === 'function') refreshAll(formation);
+		}
+		btn?.classList.toggle('mypdc-on', state.active);
+		btn?.setAttribute('aria-pressed', state.active ? 'true' : 'false');
+	}
+	// 失效期间保存队伍时，把原来的辅助一起保存
+	function fullOutObj() {
+		const obj = formation.outObj();
+		if (!state.active || !state.backup || !obj?.f) return obj;
+		obj.f.forEach((teamArr, t) => {
+			const cur = formation.teams[t][1];
+			teamArr[1] = cur.map((m, i) => (m?.id > 0 ? m : state.backup[t]?.[i]) || m).map(m => m?.outObj?.() ?? null);
+		});
+		return obj;
+	}
+	window.addEventListener('load', () => {
+		const btn = document.getElementById('btn-remove-assist');
+		if (!btn) return;
+		btn.onclick = () => setActive(!state.active);
+		btn.title = '点一次：所有辅助失效，按没有辅助重新计算；再点一次：恢复原来的辅助';
+	});
+	MyPDC.assistOff = { get active() { return state.active; }, fullOutObj, setActive };
+})();

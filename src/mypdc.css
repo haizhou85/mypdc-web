@@ -521,3 +521,11 @@ body.mypdc-compact-top .control-box details.config-display-list > summary { font
 body.mypdc-compact-top .control-box .config-display-list .setting { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .mypdc-footer { margin: 24px 8px 12px; text-align: center; }
 .mypdc-footer .mypdc-credit { display: inline; font-size: 11px; color: #888; }
+/* “解除辅助”改为“辅助失效”开关 */
+#btn-remove-assist::after { content: "辅助失效" !important; }
+#btn-remove-assist.mypdc-on { background: #c62828 !important; color: #fff !important; border-color: #8e0000 !important; }
+/* 变身 / 辅助失效 / 地下城强化 / 赋予 放在同一行：缩短文字 */
+body.mypdc-compact-top #lbl-henshin-change::after { content: none !important; }
+body.mypdc-compact-top .control-box .btn-henshin { padding: 2px 6px; }
+body.mypdc-compact-top #btn-set-dungeon-enchance::after { content: "地下城" !important; }
+body.mypdc-compact-top .control-box .formation-control { gap: 4px; }

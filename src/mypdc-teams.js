@@ -113,7 +113,7 @@
 			saveDlg = el('div', { class: 'mypdc-panel mypdc-team-dlg display-none' });
 			document.body.append(saveDlg);
 		}
-		const outObj = formation.outObj();
+		const outObj = (MyPDC.assistOff?.fullOutObj?.() || formation.outObj());
 		const f = outObj?.f || [];
 		const ids = f.map(t => (t?.[0] || []).map(m => (Array.isArray(m) ? m[0] : 0) || 0));
 		const empty = !ids.flat().some(id => id > 0);
@@ -131,7 +131,7 @@
 			try {
 				const r = await api('/api/teams', {
 					method: 'POST', admin: true,
-					body: { title: title.value, author: author.value, note: note.value, server: currentDataSource?.code || 'ja', data: formation.outObj() },
+					body: { title: title.value, author: author.value, note: note.value, server: currentDataSource?.code || 'ja', data: (MyPDC.assistOff?.fullOutObj?.() || formation.outObj()) },
 				});
 				const link = shareUrl(r.id);
 				body.innerHTML = '';

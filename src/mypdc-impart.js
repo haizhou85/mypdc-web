@@ -134,7 +134,7 @@
 				document.body.classList.toggle('mypdc-impart-on', state.on);
 				if (typeof refreshAll === 'function') refreshAll(formation);
 			} }),
-			' 觉醒赋予后');
+			' 赋予');
 		bar.append(label);
 		document.body.classList.toggle('mypdc-impart-on', state.on);
 	}
