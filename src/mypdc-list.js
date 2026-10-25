@@ -541,6 +541,7 @@
 		if (!wrap) return;
 		const heads = [...ul.children].filter(li => li.card);
 		const { rows, col } = sortedRows(heads);
+		updateCount(heads.length);
 
 		if (!listView) { // 图标模式：按同样的排序重新排列头像，并在头像上显示数值
 			reordering = true;
@@ -694,6 +695,41 @@
 			const editBox = document.querySelector('.edit-box');
 			if (editBox && !editBox.classList.contains('display-none') && editBox.mid > 0) applyPlusToEditBox();
 		});
+	}
+
+	// ---------------- 随时显示结果数量，点一下跳到结果列表（取代上游固定位置的数量） ----------------
+	let fab, resultCount = 0;
+	function listTarget() { return !S.cfg.iconView ? wrap : ul; }
+	function updateFab() {
+		if (!fab) return;
+		const box = document.querySelector('.edit-box');
+		const search = document.querySelector('.edit-box .search-box');
+		const target = listTarget();
+		let show = box && !box.classList.contains('display-none') && search?.open && !searchOptionsEmpty();
+		if (show && target && resultCount > 0) {
+			const r = target.getBoundingClientRect();
+			// 列表已经在屏幕里就不用显示
+			if (r.height > 0 && r.top < window.innerHeight - 60 && r.bottom > 60) show = false;
+		}
+		fab.classList.toggle('mypdc-show', !!show);
+	}
+	function updateCount(n) {
+		resultCount = n;
+		if (!fab) {
+			fab = el('button', { type: 'button', class: 'mypdc-result-fab', onclick: () => {
+				const t = listTarget();
+				if (resultCount > 0 && t) window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - 8, behavior: 'smooth' });
+			} });
+			document.body.append(fab);
+			window.addEventListener('scroll', updateFab, { passive: true });
+			window.addEventListener('resize', updateFab);
+			document.addEventListener('toggle', updateFab, true);
+			const box = document.querySelector('.edit-box');
+			if (box) new MutationObserver(updateFab).observe(box, { attributes: true, attributeFilter: ['class'] });
+		}
+		fab.textContent = n > 0 ? `🔍 ${n} 个结果 ↓` : '🔍 没有符合的结果';
+		fab.classList.toggle('mypdc-none', !(n > 0));
+		requestAnimationFrame(updateFab);
 	}
 
 	function buildList() {

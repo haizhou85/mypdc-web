@@ -578,3 +578,13 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 }
 .mypdc-open-btn.mypdc-open-inline { font-size: 14px !important; }
 .mypdc-open-btn.mypdc-open-inline::before { content: none !important; }
+/* 搜索结果数量：浮动显示，点一下跳到结果列表 */
+.search-box .control-div .sort-div { display: none !important; }
+.mypdc-result-fab {
+	display: none; position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 950;
+	padding: 8px 18px; border: none; border-radius: 22px; font-size: 15px; font-weight: bold;
+	background: #ff9800; color: #fff; box-shadow: 0 3px 10px rgba(0,0,0,0.35); cursor: pointer; white-space: nowrap;
+}
+.mypdc-result-fab.mypdc-show { display: block; }
+.mypdc-result-fab.mypdc-none { background: #777; cursor: default; }
+body.mypdc-panel-open .mypdc-result-fab { display: none; }
