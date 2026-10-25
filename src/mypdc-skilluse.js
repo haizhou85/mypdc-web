@@ -5,20 +5,24 @@
 	const ATTR = ['火', '水', '木', '光', '暗', '心'];
 	const picks = []; // 每个队伍选中的技能 { shield: key, hp: key }
 
-	// 技能解析结果里的限时效果（不看随机技能，结果不确定）
+	// 技能解析结果里的限时效果（不看随机技能，结果不确定）；多段进化技能记下是第几段
 	function timedEffects(skillId) {
 		const out = [];
-		const walk = (n, turns) => {
-			if (Array.isArray(n)) { n.forEach(x => walk(x, turns)); return; }
+		const walk = (n, turns, stage) => {
+			if (Array.isArray(n)) { n.forEach(x => walk(x, turns, stage)); return; }
 			if (!n || typeof n !== 'object') return;
 			if (n.kind === SkillKinds.RandomSkills) return;
-			if (n.kind === SkillKinds.ActiveTurns) { (n.skills || []).forEach(s => walk(s, n.turns)); return; }
-			if (turns && n.kind === SkillKinds.ReduceDamage) out.push({ type: 'shield', turns, node: n });
+			if (n.kind === SkillKinds.EvolvedSkills) {
+				(n.skills || []).forEach((sk, i) => walk(sk, turns, (n.skills.length > 1 ? i + 1 : 0)));
+				return;
+			}
+			if (n.kind === SkillKinds.ActiveTurns) { (n.skills || []).forEach(x => walk(x, n.turns, stage)); return; }
+			if (turns && n.kind === SkillKinds.ReduceDamage) out.push({ type: 'shield', turns, stage, node: n });
 			if (turns && n.kind === SkillKinds.PowerUp && !n.attrs?.length && !n.types?.length && !n.targets && !n.condition &&
-				n.value?.kind === SkillPowerUpKind.Multiplier && n.value.hp > 1) out.push({ type: 'hp', turns, node: n });
-			for (const [k, v] of Object.entries(n)) if (k !== 'skills' && v && typeof v === 'object') walk(v, turns);
+				n.value?.kind === SkillPowerUpKind.Multiplier && n.value.hp > 1) out.push({ type: 'hp', turns, stage, node: n });
+			for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v, turns, stage);
 		};
-		try { walk(skillParser(skillId), 0); } catch (e) { /* 解析失败当作没有 */ }
+		try { walk(skillParser(skillId), 0, 0); } catch (e) { /* 解析失败当作没有 */ }
 		return out;
 	}
 
@@ -43,7 +47,7 @@
 					const key = `${i}-${tag ? 'a' : 'm'}-${card.id}-${k}`;
 					if (seen.has(key)) return;
 					seen.add(key);
-					const who = `${i + 1}号${tag ? '辅助' : ''} ${cardName(card.id)}`;
+					const who = `${i + 1}号${tag ? '辅助' : ''} ${cardName(card.id)}${e.stage ? `（第${e.stage}段）` : ''}`;
 					if (e.type === 'shield') {
 						const s = shieldInfo(e.node);
 						if (!(s.pct > 0)) return;
