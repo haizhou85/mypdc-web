@@ -687,7 +687,9 @@
 				const form = document.getElementById('form-string-search');
 				const input = form?.querySelector('[name="search-string"]');
 				if (input) input.value = '';
-				form?.requestSubmit?.();
+				// 直接调用上游的提交处理（不依赖 requestSubmit，旧版 iOS Safari 没有）
+				if (typeof form?.onsubmit === 'function') form.onsubmit(new Event('submit', { cancelable: true }));
+				else form?.requestSubmit?.();
 			} else {
 				document.querySelector('.search-box .search-start')?.click();
 			}
