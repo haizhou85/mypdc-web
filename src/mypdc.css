@@ -549,3 +549,23 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 }
 .mypdc-dd-list button:hover { background: #fff3e0; }
 .mypdc-dd-list button.mypdc-dd-cur { font-weight: bold; color: #e65100; }
+
+/* 修改队名、说明时不弹出辅助输入工具条 */
+#rich-text-tools { display: none !important; }
+
+/* 手机：徽章选择窗口缩小，一页放下全部徽章 */
+@media (max-width: 700px) {
+	#badge-choose { max-width: calc(100vw - 16px); padding: 6px; box-sizing: border-box; }
+	#badge-choose .team-badges {
+		grid-template-columns: repeat(8, 1fr);
+		grid-gap: 4px 2px;
+		margin: 4px 0;
+		justify-items: center;
+	}
+	#badge-choose .team-badges .badge {
+		transform: scale(0.36);
+		margin: calc(var(--badge-height) * -0.32) calc(var(--badge-width) * -0.32);
+	}
+	#badge-choose .team-badges input:checked + .badge { outline-width: 14px; }
+	#badge-choose .dialog-control { margin-top: 4px; }
+}
