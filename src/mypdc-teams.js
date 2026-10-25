@@ -68,8 +68,11 @@
 	const openId = parseInt(params.get('team'), 10);
 	if (openId > 0) {
 		document.documentElement.classList.add('mypdc-team-loading');
+		const note = el('div', { class: 'mypdc-team-opening-note' }, `正在打开队伍库 #${openId}…`);
+		document.documentElement.append(note);
 		api(`/api/teams/${openId}`).then(t => location.replace(teamUrl(t))).catch(e => {
 			document.documentElement.classList.remove('mypdc-team-loading');
+			note.remove();
 			window.addEventListener('load', () => showBanner({ error: `队伍库 #${openId}：${e.message}` }));
 		});
 		return;

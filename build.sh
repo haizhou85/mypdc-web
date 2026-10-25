@@ -70,6 +70,14 @@ PY
 patch service-worker.js "	const url = new URL(event.request.url);
 	const pathname = url.pathname;" "	const url = new URL(event.request.url);
 	if (url.origin !== location.origin) return;
+	// 页面和本站自定义的 mypdc-* 文件：联网优先（断网时才用缓存），网站更新后第一次打开就是新版本
+	if (event.request.mode === \"navigate\" || /\\/mypdc-[^/]*$/.test(url.pathname)) {
+		event.respondWith(fetch(url.href, {cache: \"no-cache\", credentials: \"same-origin\"}).then(res => {
+			if (res.ok) { const copy = res.clone(); caches.open(cacheName).then(c => c.put(new URL(url.pathname, location.origin), copy)); }
+			return res;
+		}).catch(() => caches.match(new URL(url.pathname, location.origin), {ignoreSearch: true})));
+		return;
+	}
 	const pathname = url.pathname;"
 
 # 首页直接打开单人编队页面（保留网址后面的参数，例如 ?team=、#teams）
