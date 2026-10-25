@@ -500,3 +500,4 @@ html.mypdc-team-loading body { opacity: 0.3; pointer-events: none; }
 	.mypdc-skilluse-pick { flex-basis: 100%; }
 	.mypdc-skilluse-pick select { flex: 1; font-size: 15px; min-height: 32px; }
 }
+.mypdc-team-item.mypdc-team-opening { opacity: 0.5; }

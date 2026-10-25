@@ -239,7 +239,15 @@
 
 	function renderItem(t) {
 		const row = el('div', { class: 'mypdc-team-item' });
-		const open = () => { location.href = teamUrl(t); };
+		// 列表里没有编队数据：点开时再读取完整队伍
+		const open = async () => {
+			if (row.classList.contains('mypdc-team-opening')) return;
+			row.classList.add('mypdc-team-opening');
+			try { location.href = teamUrl(await api(`/api/teams/${t.id}`)); } catch (e) {
+				row.classList.remove('mypdc-team-opening');
+				window.alert(e.message); // eslint-disable-line no-alert
+			}
+		};
 		const heads = el('div', { class: 'mypdc-team-heads' },
 			t.members.map(team => el('div', { class: 'mypdc-team-row' }, team.map(headIcon))));
 		const actions = el('div', { class: 'mypdc-team-item-actions' },
