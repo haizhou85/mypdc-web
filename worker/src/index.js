@@ -4,6 +4,11 @@
 // POST   /api/teams                     保存为新队伍（任何人，无需登录，有频率限制）
 // DELETE /api/teams/:id                 删除（需要 X-Admin-Key）
 // GET    /api/admin                     检查管理密码
+// GET    /api/dungeons                  关卡列表（任何人）
+// GET    /api/dungeons/:id              单个关卡（任何人）
+// POST   /api/dungeons                  新建关卡（管理员）
+// PUT    /api/dungeons/:id              修改关卡（管理员）
+// DELETE /api/dungeons/:id              删除关卡（管理员）
 const ALLOWED_ORIGINS = [
 	'https://haizhou85.github.io',
 	'https://lalapad.pages.dev',
@@ -21,7 +26,7 @@ function cors(req) {
 	const origin = req.headers.get('Origin') || '';
 	return {
 		'Access-Control-Allow-Origin': (ALLOWED_ORIGINS.includes(origin) || /^https:\/\/[a-z0-9-]+\.lalapad\.pages\.dev$/.test(origin)) ? origin : ALLOWED_ORIGINS[0],
-		'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+		'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 		'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Key',
 		'Access-Control-Max-Age': '86400',
 		'Vary': 'Origin',
@@ -125,6 +130,51 @@ async function remove(req, env, id) {
 	return json(req, { deleted: r.meta?.changes || 0 });
 }
 
+// ---------- 关卡库 ----------
+const DUNGEON_MAX = 300000;
+function dungeonOut(r, full) {
+	const o = { id: r.id, name: r.name, server: r.server, created: r.created, updated: r.updated };
+	if (full) o.data = JSON.parse(r.data);
+	return o;
+}
+async function dungeonList(req, env) {
+	const { results } = await env.DB.prepare('SELECT id, name, server, created, updated FROM dungeons ORDER BY updated DESC LIMIT 500').all();
+	return json(req, { items: results.map(r => dungeonOut(r, false)) });
+}
+async function dungeonGet(req, env, id) {
+	const r = await env.DB.prepare('SELECT * FROM dungeons WHERE id = ?').bind(id).first();
+	return r ? json(req, dungeonOut(r, true)) : fail(req, '找不到这个关卡', 404);
+}
+async function dungeonBody(req) {
+	const text = await req.text();
+	if (text.length > DUNGEON_MAX) throw new Error('数据太大');
+	const body = JSON.parse(text);
+	const name = cleanText(body.name, 80);
+	if (!name) throw new Error('请填写关卡名称');
+	const server = SERVERS.includes(body.server) ? body.server : 'ja';
+	const data = body.data && typeof body.data === 'object' ? body.data : { floors: [] };
+	return { name, server, data: JSON.stringify(data) };
+}
+async function dungeonSave(req, env, id) {
+	if (!(await isAdmin(req, env))) return fail(req, '没有修改权限', 403);
+	let b;
+	try { b = await dungeonBody(req); } catch (e) { return fail(req, e.message || '数据格式不对'); }
+	const now = Date.now();
+	if (id) {
+		const r = await env.DB.prepare('UPDATE dungeons SET name = ?, server = ?, data = ?, updated = ? WHERE id = ?').bind(b.name, b.server, b.data, now, id).run();
+		if (!r.meta?.changes) return fail(req, '找不到这个关卡', 404);
+		return json(req, { id });
+	}
+	const r = await env.DB.prepare('INSERT INTO dungeons (name, server, data, created, updated) VALUES (?, ?, ?, ?, ?) RETURNING id')
+		.bind(b.name, b.server, b.data, now, now).first();
+	return json(req, { id: r.id }, 201);
+}
+async function dungeonDelete(req, env, id) {
+	if (!(await isAdmin(req, env))) return fail(req, '没有删除权限', 403);
+	const r = await env.DB.prepare('DELETE FROM dungeons WHERE id = ?').bind(id).run();
+	return json(req, { deleted: r.meta?.changes || 0 });
+}
+
 export default {
 	async fetch(req, env) {
 		if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(req) });
@@ -140,6 +190,17 @@ export default {
 				const id = parseInt(m[1], 10);
 				if (req.method === 'GET') return await getOne(req, env, id);
 				if (req.method === 'DELETE') return await remove(req, env, id);
+			}
+			if (path === '/api/dungeons') {
+				if (req.method === 'GET') return await dungeonList(req, env);
+				if (req.method === 'POST') return await dungeonSave(req, env, 0);
+			}
+			const dm = path.match(/^\/api\/dungeons\/(\d+)$/);
+			if (dm) {
+				const id = parseInt(dm[1], 10);
+				if (req.method === 'GET') return await dungeonGet(req, env, id);
+				if (req.method === 'PUT') return await dungeonSave(req, env, id);
+				if (req.method === 'DELETE') return await dungeonDelete(req, env, id);
 			}
 			if (path === '/api/admin' && req.method === 'GET') {
 				return (await isAdmin(req, env)) ? json(req, { ok: true }) : fail(req, '密码不对', 403);

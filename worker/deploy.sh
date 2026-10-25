@@ -45,4 +45,16 @@ for i in 1 2 3 4 5 6; do
 	sleep 5
 done
 echo "::notice title=队伍库后端::$URL （接口检查 HTTP $CODE）"
+
+# 仓库里 dungeons/*.json 的关卡：服务器上还没有同名关卡时新建（已有的不覆盖，网页上的修改优先）
+if ls ../dungeons/*.json >/dev/null 2>&1; then
+	NAMES=$(curl -s "$URL/api/dungeons" | jq -r '.items[]?.name' || true)
+	for f in ../dungeons/*.json; do
+		N=$(jq -r '.name' "$f")
+		if printf '%s\n' "$NAMES" | grep -qxF "$N"; then continue; fi
+		R=$(curl -s -X POST "$URL/api/dungeons" -H 'Content-Type: application/json' -H "X-Admin-Key: $ADMIN_KEY" --data-binary @"$f")
+		echo "::notice title=新建关卡::$N → $R"
+	done
+fi
+
 [ -n "${GITHUB_OUTPUT:-}" ] && echo "api=$URL" >> "$GITHUB_OUTPUT"

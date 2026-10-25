@@ -12,3 +12,11 @@ CREATE TABLE IF NOT EXISTS teams (
 );
 CREATE INDEX IF NOT EXISTS teams_ip_created ON teams (ip, created);
 CREATE INDEX IF NOT EXISTS teams_created ON teams (created);
+CREATE TABLE IF NOT EXISTS dungeons (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL,
+	server TEXT NOT NULL DEFAULT 'ja',
+	data TEXT NOT NULL,
+	created INTEGER NOT NULL,
+	updated INTEGER NOT NULL
+);

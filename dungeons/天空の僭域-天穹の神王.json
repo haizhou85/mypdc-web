@@ -1,0 +1,48 @@
+{
+ "name": "天空の僭域・天穹の神王",
+ "server": "ja",
+ "data": {
+  "note": "根据 PDC 截图录入（截图到 1F 地王の伴神龍・ネド 为止）。",
+  "floors": [
+   {
+    "name": "乱入",
+    "enemies": [
+     {
+      "name": "豊熟の黄果精・レモック", "cardId": 10981, "attr": 3,
+      "skills": [
+       { "name": "混成のレモン", "pre": true, "damage": 7650000, "hits": 1, "attr": -1, "type": "normal", "tags": [], "note": "" },
+       { "name": "レモンミックス", "pre": false, "damage": 8585000, "hits": 1, "attr": -1, "type": "normal", "tags": [], "note": "" },
+       { "name": "レモンマッシュ", "pre": false, "damage": 8670000, "hits": 1, "attr": -1, "type": "normal", "tags": [], "note": "" },
+       { "name": "レモンマッシュ", "pre": false, "damage": 11271000, "hits": 1, "attr": -1, "type": "normal", "tags": [], "note": "攻撃力1.3倍時" }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "1F",
+    "enemies": [
+     {
+      "name": "聖炉の伴神龍・ハーニス", "cardId": 4638, "attr": 0,
+      "skills": [
+       { "name": "聖炉の目覚め", "pre": true, "damage": 22500, "hits": 1, "attr": -1, "type": "normal", "tags": [], "note": "" },
+       { "name": "通常攻撃", "pre": false, "damage": 2250000, "hits": 1, "attr": -1, "type": "normal", "tags": [], "note": "" }
+      ]
+     },
+     {
+      "name": "海洋の伴神龍・レニュア", "cardId": 4640, "attr": 1,
+      "skills": [
+       { "name": "海洋の盾", "pre": true, "damage": 22500, "hits": 1, "attr": -1, "type": "normal", "tags": [], "note": "" },
+       { "name": "通常攻撃", "pre": false, "damage": 2250000, "hits": 1, "attr": -1, "type": "normal", "tags": [], "note": "" }
+      ]
+     },
+     {
+      "name": "地王の伴神龍・ネド", "cardId": 4642, "attr": 2,
+      "skills": [
+       { "name": "地王の息吹", "pre": true, "damage": 45000, "hits": 1, "attr": -1, "type": "normal", "tags": [], "note": "" }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

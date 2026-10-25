@@ -31,7 +31,8 @@
 		const prob = Number(node.prob?.value ?? node.prob) || 1;
 		const attrs = node.attrs === 'all' || !Array.isArray(node.attrs) ? null : node.attrs.filter(a => a >= 0 && a <= 5);
 		const all = !attrs || attrs.length >= 5;
-		return { pct, prob, attrText: all ? '' : attrs.map(a => ATTR[a]).join('') + '属性' };
+		const mask = all ? 0b11111 : attrs.reduce((m, a) => m | (1 << a), 0);
+		return { pct, prob, mask, attrText: all ? '' : attrs.map(a => ATTR[a]).join('') + '属性' };
 	}
 
 	// 队伍里能用的盾 / HP上限技能（队员本身和辅助的主动技能）
@@ -52,7 +53,7 @@
 						const s = shieldInfo(e.node);
 						if (!(s.pct > 0)) return;
 						res.shield.push({
-							key, rate: s.pct, prob: s.prob,
+							key, rate: s.pct, prob: s.prob, mask: s.mask,
 							text: `${s.attrText}减伤${Math.round(s.pct * 100)}%${s.prob < 1 ? `（${Math.round(s.prob * 100)}%几率）` : ''} ${e.turns}回合 · ${who}`,
 						});
 					} else {
@@ -155,5 +156,16 @@
 		}
 	}, 500);
 
-	MyPDC.skillUse = { teamSkills, render };
+	// 当前队伍选中的开技效果（关卡伤害计算用）：{ shield: { rate, mask } | null, hpMul }
+	function current(teamIdx) {
+		const st = teamStats[teamIdx];
+		const pick = picks[teamIdx];
+		if (!st?.team || !pick) return { shield: null, hpMul: 1 };
+		const skills = teamSkills(st.team);
+		const shield = skills.shield.find(s => s.key === pick.shield) || null;
+		const hp = skills.hp.find(s => s.key === pick.hp);
+		return { shield, hpMul: hp ? hp.rate : 1 };
+	}
+
+	MyPDC.skillUse = { teamSkills, render, current };
 })();

@@ -596,3 +596,44 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .search-box .types-div label[for="type-and-or"] { margin-left: 0 !important; }
 /* “编辑界面使用侧栏模式 / 黏性定位”开关不需要 */
 #use-side-mode, label[for="use-side-mode"], #use-sticky, label[for="use-sticky"] { display: none !important; }
+
+/* ---------- 关卡伤害 ---------- */
+.mypdc-dg-bar .mypdc-dg-select { flex: 1; min-width: 0; font-size: 15px; padding: 4px; }
+.mypdc-dg-team { padding: 6px 8px; }
+.mypdc-dg-hp { gap: 6px 12px; }
+.mypdc-dg-use { color: #f57c00; font-weight: bold; }
+.mypdc-dg-attrs { display: inline-flex; gap: 8px; font-size: 13px; }
+.mypdc-dg-note { white-space: pre-wrap; color: #888; margin: 6px 0; }
+.mypdc-dg-enemy-title { background: #b9b0e8; color: #222; padding: 4px 8px; font-weight: bold; margin-top: 8px; }
+.mypdc-dg-enemy { display: flex; gap: 6px; align-items: flex-start; }
+.mypdc-dg-head { flex: none; width: 56px; height: 56px; overflow: hidden; margin-top: 4px; }
+.mypdc-dg-head > .monster { zoom: 0.56; pointer-events: none; }
+.mypdc-dg-noicon { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border: 2px solid currentColor; border-radius: 8px; font-weight: bold; font-size: 20px; }
+.mypdc-dg-skills { flex: 1; min-width: 0; }
+.mypdc-dg-skill { border-bottom: 1px solid var(--mypdc-line); padding: 3px 0; }
+.mypdc-dg-skill-name { background: var(--mypdc-soft); padding: 2px 6px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.mypdc-dg-pre .mypdc-dg-skill-name { color: #1e88e5; }
+.mypdc-dg-pretag { font-size: 11px; border: 1px solid #1e88e5; border-radius: 4px; padding: 0 3px; }
+.mypdc-dg-skill-note { color: #888; font-size: 12px; }
+.mypdc-dg-skill-row { display: grid; grid-template-columns: 1fr auto 6.5em; align-items: center; gap: 6px; padding: 2px 6px; }
+.mypdc-dg-raw { font-variant-numeric: tabular-nums; }
+.mypdc-dg-need { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; white-space: nowrap; }
+.mypdc-dg-latent { display: inline-block; width: 22px; height: 22px; overflow: hidden; margin-left: 4px; }
+.mypdc-dg-latent .latent-icon { zoom: 0.6; }
+.mypdc-dg-taken { text-align: right; font-weight: bold; font-variant-numeric: tabular-nums; }
+.mypdc-dg-taken.ok { color: #2e9d3a; }
+.mypdc-dg-taken.dead { color: #d32f2f; }
+.mypdc-dg-tag { font-size: 11px; padding: 0 5px; border-radius: 8px; color: #fff; line-height: 1.6; border: none; }
+.mypdc-dg-tag-red, .mypdc-panel .mypdc-dg-tag-red { background: #d32f2f; color: #fff; border-color: #d32f2f; }
+.mypdc-dg-tag-purple, .mypdc-panel .mypdc-dg-tag-purple { background: #7b1fa2; color: #fff; border-color: #7b1fa2; }
+.mypdc-dg-tag-orange, .mypdc-panel .mypdc-dg-tag-orange { background: #ef6c00; color: #fff; border-color: #ef6c00; }
+.mypdc-dg-tag-blue, .mypdc-panel .mypdc-dg-tag-blue { background: #1565c0; color: #fff; border-color: #1565c0; }
+.mypdc-dg-edit-tags .mypdc-dg-tag { opacity: 0.35; cursor: pointer; margin: 2px; font-size: 12px; padding: 2px 6px; }
+.mypdc-dg-edit-tags .mypdc-dg-tag.on { opacity: 1; }
+.mypdc-dg-edit-floor { border: 2px solid #b9b0e8; border-radius: 8px; padding: 6px; margin: 8px 0; }
+.mypdc-dg-edit-enemy { border: 1px solid var(--mypdc-line); border-radius: 6px; padding: 6px; margin: 6px 0; }
+.mypdc-dg-edit-skill { border-top: 1px dashed var(--mypdc-line); padding: 4px 0; }
+.mypdc-dg-edit .mypdc-row { gap: 4px 8px; }
+.mypdc-dg-field textarea, .mypdc-dg-json { width: 100%; box-sizing: border-box; }
+.mypdc-panel .mypdc-dg-danger { color: #d32f2f; }
+.mypdc-dg-edit-actions { position: sticky; bottom: 0; background: var(--mypdc-bg); padding: 6px 0; }
