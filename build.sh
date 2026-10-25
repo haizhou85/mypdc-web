@@ -19,7 +19,13 @@ cp "$HERE"/src/* "$OUT"/
 printf 'window.MYPDC_API = %s;\n' "$(python3 -I -c 'import json,os; print(json.dumps(os.environ.get("MYPDC_API","")))')" > "$OUT/mypdc-config.js"
 
 # 在页面里引入自定义脚本（放在 script.js 之后）
-INJECT='<link href="mypdc.css" rel="stylesheet" type="text/css">\n<link href="mypdc-mobile.css" rel="stylesheet" type="text/css">\n<script type="text/javascript" src="mypdc-config.js"></script>\n<script type="text/javascript" src="mypdc-common.js"></script>\n<script type="text/javascript" src="mypdc-impart.js"></script>\n<script type="text/javascript" src="mypdc-detail.js"></script>\n<script type="text/javascript" src="mypdc-sort.js"></script>\n<script type="text/javascript" src="mypdc-list.js"></script>\n<script type="text/javascript" src="mypdc-reduce.js"></script>\n<script type="text/javascript" src="mypdc-skilluse.js"></script>\n<script type="text/javascript" src="mypdc-teams.js"></script>'
+# 每个文件带上内容哈希（?v=...），网站更新后浏览器一定会取新版本，不会出现新脚本配旧样式
+ver() { sha1sum "$OUT/$1" | cut -c1-10; }
+INJECT=""
+for f in mypdc.css mypdc-mobile.css; do INJECT+="<link href=\"$f?v=$(ver $f)\" rel=\"stylesheet\" type=\"text/css\">\\n"; done
+for f in mypdc-config.js mypdc-common.js mypdc-impart.js mypdc-detail.js mypdc-sort.js mypdc-list.js mypdc-reduce.js mypdc-skilluse.js mypdc-teams.js; do
+	INJECT+="<script type=\"text/javascript\" src=\"$f?v=$(ver $f)\"></script>\\n"
+done
 for page in solo.html multi.html triple.html; do
 	if ! grep -q 'src="script.js"></script>' "$OUT/$page"; then
 		echo "错误：$page 中找不到 script.js 引用，上游页面结构可能变了" >&2
