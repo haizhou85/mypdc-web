@@ -30,7 +30,6 @@
 		['队伍/回复', [
 			['溜(减CD)', ['主动技', '对自身队伍生效类', '【溜】减少CD']],
 			['换队长', ['主动技', '对自身队伍生效类', '更换队长']],
-			['转属性', ['主动技', '对自身队伍生效类', '转换队员属性']],
 			['回合回血', ['主动技', '玩家HP操纵类', '回合结束回血 buff']],
 			['立刻回血', ['主动技', '玩家HP操纵类', '玩家立刻回血']],
 			['时间暂停', ['主动技', '时间暂停']],
@@ -56,6 +55,15 @@
 			['敌→木', 'custom:enemy-attr-2', 2],
 			['敌→光', 'custom:enemy-attr-3', 3],
 			['敌→暗', 'custom:enemy-attr-4', 4],
+		]],
+		['转己方属性', [
+			['任意', 'custom:self-attr-any'],
+			['→火', 'custom:self-attr-0', 0],
+			['→水', 'custom:self-attr-1', 1],
+			['→木', 'custom:self-attr-2', 2],
+			['→光', 'custom:self-attr-3', 3],
+			['→暗', 'custom:self-attr-4', 4],
+			['随机', 'custom:self-attr-random'],
 		]],
 		['板面', [
 			['解锁', ['主动技', '改变宝珠状态类', '解锁']],
@@ -133,12 +141,36 @@
 		return best;
 	}
 
+	// 转己方属性（自己、队长、相邻队员等，不含敌人）：{ attrs: 固定转成的属性, random: 随机转成某属性 }
+	const selfAttrCache = new Map();
+	function selfAttrOf(card) {
+		const none = { attrs: new Set(), random: false };
+		if (!skillsReady() || !card.activeSkillId) return none;
+		if (selfAttrCache.has(card.id)) return selfAttrCache.get(card.id);
+		const res = { attrs: new Set(), random: false };
+		const walk = (n, rnd) => {
+			if (Array.isArray(n)) { n.forEach(x => walk(x, rnd)); return; }
+			if (!n || typeof n !== 'object') return;
+			if (n.kind === SkillKinds.ChangeAttribute && !(n.targets || []).some(t => String(t).startsWith('enemy'))) {
+				if (rnd) res.random = true; else res.attrs.add(n.attr ?? 0);
+			}
+			const r2 = rnd || n.kind === SkillKinds.RandomSkills;
+			for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v, r2);
+		};
+		try { walk(skillParser(card.activeSkillId), false); } catch (e) { /* 忽略 */ }
+		selfAttrCache.set(card.id, res);
+		return res;
+	}
+
 	const CUSTOM_FILTERS = {
+		'self-attr-any': cards => cards.filter(c => { const r = selfAttrOf(c); return r.random || r.attrs.size > 0; }),
+		'self-attr-random': cards => cards.filter(c => selfAttrOf(c).random),
 		'shield-any': cards => cards.filter(c => shieldOf(c) > 0),
 		'maxhp-up': cards => cards.filter(c => { const sk = activeSkillOf(c, [237]); return sk && sk.params[1] > 100; }),
 		'enemy-attr-any': cards => cards.filter(c => enemyAttrOf(c) !== null),
 	};
 	for (let a = 0; a < 5; a++) CUSTOM_FILTERS['enemy-attr-' + a] = cards => cards.filter(c => enemyAttrOf(c) === a);
+	for (let a = 0; a < 5; a++) CUSTOM_FILTERS['self-attr-' + a] = cards => cards.filter(c => selfAttrOf(c).attrs.has(a));
 	for (let a = 0; a <= 9; a++) CUSTOM_FILTERS['orb-' + a] = cards => cards.filter(c => orbColorsOf(c).has(a));
 
 	function findFilter(path) {
