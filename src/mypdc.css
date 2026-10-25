@@ -529,3 +529,6 @@ body.mypdc-compact-top #lbl-henshin-change::after { content: none !important; }
 body.mypdc-compact-top .control-box .btn-henshin { padding: 2px 6px; }
 body.mypdc-compact-top #btn-set-dungeon-enchance::after { content: "地下城" !important; }
 body.mypdc-compact-top .control-box .formation-control { gap: 4px; }
+/* iOS Safari 的“文字自动放大”会在重绘后把部分文字（例如开技下拉框）放大：关掉 */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.mypdc-skilluse select { -webkit-text-size-adjust: 100%; line-height: 1.2; height: auto; }
