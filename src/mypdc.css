@@ -431,3 +431,53 @@ body:not(.mypdc-skill-icons) .edit-box .skill-datail-parsed icon.orb:not(.board 
 .mypdc-awoken-opts { margin: 4px 0; font-size: 0.95em; }
 /* 统一后的开关：文字与开关之间留点空隙 */
 input[type="checkbox"].switch-ipt + label[for^="mypdc-sw-"]::before { margin-right: 4px; }
+
+/* ---------- 队伍库 ---------- */
+html.mypdc-team-loading body { opacity: 0.3; pointer-events: none; }
+.mypdc-team-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
+.mypdc-team-buttons button { font-size: 15px; padding: 4px 12px; cursor: pointer; }
+.mypdc-team-banner {
+	margin: 6px 0; padding: 8px 10px; border-radius: 8px;
+	background: #fff8e1; color: #333; border: 1px solid #ffcc80; font-size: 14px;
+}
+.mypdc-team-banner-title b { font-size: 16px; }
+.mypdc-team-meta { color: #888; font-size: 12px; }
+.mypdc-team-note { white-space: pre-wrap; margin-top: 4px; font-size: 13px; }
+.mypdc-team-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.mypdc-team-banner button { cursor: pointer; padding: 3px 10px; }
+.mypdc-team-field { display: block; margin: 10px 0; }
+.mypdc-team-field > span { display: block; font-weight: bold; margin-bottom: 4px; }
+.mypdc-team-field input, .mypdc-team-field textarea { width: 100%; box-sizing: border-box; font-size: 16px !important; padding: 6px 8px !important; }
+.mypdc-panel .mypdc-team-primary { background: var(--mypdc-accent); color: #fff; border-color: var(--mypdc-accent); font-weight: bold; }
+.mypdc-panel .mypdc-team-actions button { font-size: 15px; padding: 6px 14px; }
+.mypdc-team-msg { color: var(--mypdc-dead); margin: 6px 0; }
+.mypdc-team-link input { width: 100%; box-sizing: border-box; font-size: 14px; padding: 6px; }
+.mypdc-team-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.mypdc-panel .mypdc-team-search { flex: 1; min-width: 0; font-size: 16px; padding: 6px 8px; }
+.mypdc-team-item {
+	display: flex; align-items: center; gap: 10px;
+	padding: 8px 4px; border-bottom: 1px solid var(--mypdc-line); cursor: pointer;
+}
+.mypdc-team-item:hover { background: var(--mypdc-soft); }
+.mypdc-team-heads { flex: none; }
+.mypdc-team-row { display: flex; gap: 1px; }
+.mypdc-team-row + .mypdc-team-row { margin-top: 2px; }
+.mypdc-team-head { display: inline-block; width: 40px; height: 40px; overflow: hidden; }
+.mypdc-team-head > .monster { zoom: 0.4; pointer-events: none; }
+.mypdc-team-info { flex: 1; min-width: 0; }
+.mypdc-team-title { font-weight: bold; font-size: 15px; overflow-wrap: anywhere; }
+.mypdc-team-id { color: #888; font-weight: normal; font-size: 12px; }
+.mypdc-team-info .mypdc-team-note { color: #666; max-height: 2.8em; overflow: hidden; }
+.mypdc-team-item-actions { display: flex; flex-direction: column; gap: 4px; flex: none; }
+.mypdc-panel .mypdc-team-del.confirm { background: var(--mypdc-dead); color: #fff; }
+.mypdc-team-empty { color: #888; padding: 16px 0; }
+.mypdc-team-admin { margin-top: 16px; color: #888; font-size: 13px; }
+.mypdc-team-admin input { margin: 0 6px; }
+@media (max-width: 600px) {
+	.mypdc-team-item { flex-wrap: wrap; }
+	.mypdc-team-heads { order: 0; width: 100%; }
+	.mypdc-team-head { width: 46px; height: 46px; }
+	.mypdc-team-head > .monster { zoom: 0.46; }
+	.mypdc-team-info { order: 1; }
+	.mypdc-team-item-actions { order: 2; flex-direction: row; }
+}

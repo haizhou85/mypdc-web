@@ -1,3 +1,4 @@
 site/
 upstream/
 node_modules/
+.wrangler/

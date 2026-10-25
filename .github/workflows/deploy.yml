@@ -18,7 +18,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  api:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.worker.outputs.api }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 部署队伍库后端（Cloudflare Worker + D1）
+        id: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+        run: ./worker/deploy.sh
+
   build:
+    needs: api
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +51,8 @@ jobs:
           node-version: 22
 
       - name: 构建网站
+        env:
+          MYPDC_API: ${{ needs.api.outputs.api }}
         run: |
           ./build.sh upstream site
           echo "上游版本：$(git -C upstream log -1 --format='%ci %s')"

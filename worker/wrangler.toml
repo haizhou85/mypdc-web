@@ -1,0 +1,9 @@
+name = "mypdc-teams"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mypdc-teams"
+database_id = "__DB_ID__"

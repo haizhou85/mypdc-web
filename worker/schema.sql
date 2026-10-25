@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS teams (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	title TEXT NOT NULL,
+	author TEXT NOT NULL DEFAULT '',
+	note TEXT NOT NULL DEFAULT '',
+	page TEXT NOT NULL,
+	server TEXT NOT NULL DEFAULT 'ja',
+	members TEXT NOT NULL,
+	data TEXT NOT NULL,
+	created INTEGER NOT NULL,
+	ip TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS teams_ip_created ON teams (ip, created);
+CREATE INDEX IF NOT EXISTS teams_created ON teams (created);

@@ -15,9 +15,11 @@ rm -rf "$OUT/.git" "$OUT/.github" "$OUT/node_modules" "$OUT/monsters-info/offici
 
 echo "==> 叠加自定义功能"
 cp "$HERE"/src/* "$OUT"/
+# 队伍库后端地址（由部署流程传入；本地构建不传则不显示队伍库功能）
+printf 'window.MYPDC_API = %s;\n' "$(python3 -I -c 'import json,os; print(json.dumps(os.environ.get("MYPDC_API","")))')" > "$OUT/mypdc-config.js"
 
 # 在页面里引入自定义脚本（放在 script.js 之后）
-INJECT='<link href="mypdc.css" rel="stylesheet" type="text/css">\n<link href="mypdc-mobile.css" rel="stylesheet" type="text/css">\n<script type="text/javascript" src="mypdc-common.js"></script>\n<script type="text/javascript" src="mypdc-impart.js"></script>\n<script type="text/javascript" src="mypdc-detail.js"></script>\n<script type="text/javascript" src="mypdc-sort.js"></script>\n<script type="text/javascript" src="mypdc-list.js"></script>\n<script type="text/javascript" src="mypdc-reduce.js"></script>'
+INJECT='<link href="mypdc.css" rel="stylesheet" type="text/css">\n<link href="mypdc-mobile.css" rel="stylesheet" type="text/css">\n<script type="text/javascript" src="mypdc-config.js"></script>\n<script type="text/javascript" src="mypdc-common.js"></script>\n<script type="text/javascript" src="mypdc-impart.js"></script>\n<script type="text/javascript" src="mypdc-detail.js"></script>\n<script type="text/javascript" src="mypdc-sort.js"></script>\n<script type="text/javascript" src="mypdc-list.js"></script>\n<script type="text/javascript" src="mypdc-reduce.js"></script>\n<script type="text/javascript" src="mypdc-teams.js"></script>'
 for page in solo.html multi.html triple.html; do
 	if ! grep -q 'src="script.js"></script>' "$OUT/$page"; then
 		echo "错误：$page 中找不到 script.js 引用，上游页面结构可能变了" >&2
@@ -62,6 +64,12 @@ m['name'] = name
 m['short_name'] = 'LaLa PAD'
 open(p, 'w', encoding='utf-8').write(json.dumps(m, ensure_ascii=False, indent='\t'))
 PY
+
+# 离线缓存不处理其他网站的请求（队伍库接口必须每次联网读取，不能用缓存）
+patch service-worker.js "	const url = new URL(event.request.url);
+	const pathname = url.pathname;" "	const url = new URL(event.request.url);
+	if (url.origin !== location.origin) return;
+	const pathname = url.pathname;"
 
 echo "==> 重新生成离线缓存表"
 (cd "$OUT" && npm install --no-audit --no-fund --silent && node update-service-worker.js >/dev/null && rm -rf node_modules package-lock.json)
