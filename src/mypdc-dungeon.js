@@ -51,7 +51,47 @@
 		const s = getAttrShieldAwokenReduceScales(team).find(x => (x.attrs >> attr) & 1);
 		return s ? s.scale : 0;
 	}
-	function teamInfo() {
+	// 熟成：按层数（5F 起 ×1.5、10F 起 ×2）重新计算队伍 HP，返回相对当前页面设置的倍率 [正常, 觉醒无效]
+	function floorStage(fl) {
+		if (fl.stage > 0) return fl.stage;
+		const m = String(fl.name || '').match(/(\d+)\s*F/i);
+		if (m) return +m[1];
+		return /boss/i.test(fl.name || '') ? 99 : 1;
+	}
+	let stageCache = new Map();
+	function stageRatio(ti, stage) {
+		if (teamsCount === 2 || typeof countTeamHp !== 'function') return [1, 1];
+		const key = ti + ':' + stage;
+		if (stageCache.has(key)) return stageCache.get(key);
+		let res = [1, 1];
+		const team = formation.teams[ti];
+		const dge = formation.dungeonEnchance;
+		if (team && dge) {
+			const [l1, l2] = leaderIds(ti);
+			const sum = (t, noAw) => countTeamHp(t, l1, l2, solo, noAw).reduce((a, b) => a + b, 0);
+			const saved = dge.stage;
+			try {
+				dge.stage = stage;
+				const members = team[0].map((m, i) => {
+					if (!m || !(m.id > 0)) return m;
+					const ab = calculateAbility(m, team[1][i], solo, teamsCount);
+					if (!ab) return m;
+					const c = Object.assign(Object.create(Object.getPrototypeOf(m)), m);
+					c.ability = ab.map(a => a[0]);
+					c.abilityNoAwoken = ab.map(a => a[1]);
+					return c;
+				});
+				const t2 = [members, ...team.slice(1)];
+				dge.stage = saved;
+				const b0 = sum(team, false), b1 = sum(team, true);
+				res = [b0 > 0 ? sum(t2, false) / b0 : 1, b1 > 0 ? sum(t2, true) / b1 : 1];
+			} catch (e) { console.error(e); } finally { dge.stage = saved; }
+		}
+		stageCache.set(key, res);
+		return res;
+	}
+
+	function teamInfo(stage) {
 		const use = MyPDC.skillUse?.current?.(teamsCount === 2 ? 0 : state.teamIdx) || { shield: null, hpMul: 1 };
 		if (teamsCount === 2) {
 			const fs = MyPDC.formationStats;
@@ -68,7 +108,9 @@
 		const team = formation.teams[ti];
 		const [l1, l2] = leaderIds(ti);
 		const shields = [...getReduceScales(l1), ...getReduceScales(l2), badgeShield(team[2])].filter(s => s && s.scale > 0 && s.attrs);
-		return { maxHp: Math.round((state.awokenBind ? stats.tHPNoAwoken : stats.tHP) * use.hpMul), shields, team, use };
+		const ratio = stage ? stageRatio(ti, stage)[state.awokenBind ? 1 : 0] : 1;
+		const base = state.awokenBind ? stats.tHPNoAwoken : stats.tHP;
+		return { maxHp: Math.round(base * ratio * use.hpMul), shields, team, use, stage };
 	}
 	function keepAt(info, attr, hpPct, extraAttr) {
 		let keep = 1;
@@ -134,6 +176,7 @@
 			renderTimer = null;
 			if (!panel || panel.classList.contains('display-none')) return;
 			const scroll = body.scrollTop;
+			stageCache = new Map();
 			body.innerHTML = '';
 			body.append(renderBar());
 			if (msg) body.append(el('div', { class: 'mypdc-team-msg' }, msg));
@@ -160,7 +203,7 @@
 	}
 
 	function renderTeam() {
-		const info = teamInfo();
+		const info = teamInfo(1);
 		const box = el('div', { class: 'mypdc-box mypdc-dg-team' });
 		const set = (k, v) => { state[k] = v; saveState(); render(); };
 		const n = formation?.teams?.length || 1;
@@ -188,11 +231,13 @@
 	}
 
 	function renderDungeon(data) {
-		const info = teamInfo();
+		const base = teamInfo(1);
 		const wrap = el('div', { class: 'mypdc-dg' });
 		if (cur?.data?.note) wrap.append(el('div', { class: 'mypdc-dg-note' }, cur.data.note));
 		(data.floors || []).forEach(fl => (fl.enemies || []).forEach(en => {
-			wrap.append(el('div', { class: 'mypdc-dg-enemy-title' }, `(${fl.name || '-'}) ${en.name || cardName(en.cardId) || '敌人'}`));
+			const info = teamInfo(floorStage(fl));
+			const stageHp = info && base && info.maxHp !== base.maxHp ? el('span', { class: 'mypdc-dg-stagehp' }, `熟成HP ${fmt(info.maxHp)}`) : null;
+			wrap.append(el('div', { class: 'mypdc-dg-enemy-title' }, el('span', null, `(${fl.name || '-'}) ${en.name || cardName(en.cardId) || '敌人'}`), stageHp));
 			const rows = el('div', { class: 'mypdc-dg-skills' });
 			(en.skills || []).forEach(sk => {
 				const attr = skillAttr(sk, en);
@@ -244,6 +289,8 @@
 			const fbox = el('div', { class: 'mypdc-dg-edit-floor' },
 				el('div', { class: 'mypdc-row' },
 					el('label', null, '层 ', inp(fl, 'name', { style: 'width:6em', placeholder: '1F / 乱入' })),
+					el('label', { title: '计算熟成用的层数；不填时按名称里的数字（BOSS 当作最高层，乱入当作 1）' }, '熟成层数 ',
+						el('input', { type: 'number', min: 0, value: fl.stage || '', placeholder: '自动', style: 'width:4em', oninput: e => { fl.stage = +e.target.value || 0; } })),
 					btn('↑', () => move(data.floors, fi, -1)), btn('↓', () => move(data.floors, fi, 1)),
 					btn('删除这层', () => { if (confirm(`删除“${fl.name}”整层？`)) data.floors.splice(fi, 1); }, 'mypdc-dg-danger')));
 			(fl.enemies = fl.enemies || []).forEach((en, ei) => {

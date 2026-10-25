@@ -652,3 +652,5 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .mypdc-install-actions button { font-size: 15px; padding: 6px 14px; border-radius: 18px; border: 1px solid #bbb; background: #f4f4f6; cursor: pointer; }
 .mypdc-install-actions .mypdc-install-primary { background: #1e88e5; color: #fff; border-color: #1e88e5; font-weight: bold; }
 .mypdc-footer { margin-top: 8px !important; }
+.mypdc-dg-enemy-title { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.mypdc-dg-stagehp { font-weight: normal; }

@@ -46,14 +46,24 @@ for i in 1 2 3 4 5 6; do
 done
 echo "::notice title=队伍库后端::$URL （接口检查 HTTP $CODE）"
 
-# 仓库里 dungeons/*.json 的关卡：服务器上还没有同名关卡时新建（已有的不覆盖，网页上的修改优先）
+# 仓库里 dungeons/*.json 的关卡：服务器上没有同名关卡时新建；
+# 已有同名关卡时，只有文件里的 data.rev 比服务器上的大才覆盖（网页上的修改不会被冲掉）
 if ls ../dungeons/*.json >/dev/null 2>&1; then
-	NAMES=$(curl -s "$URL/api/dungeons" | jq -r '.items[]?.name' || true)
+	LIST=$(curl -s "$URL/api/dungeons")
 	for f in ../dungeons/*.json; do
 		N=$(jq -r '.name' "$f")
-		if printf '%s\n' "$NAMES" | grep -qxF "$N"; then continue; fi
-		R=$(curl -s -X POST "$URL/api/dungeons" -H 'Content-Type: application/json' -H "X-Admin-Key: $ADMIN_KEY" --data-binary @"$f")
-		echo "::notice title=新建关卡::$N → $R"
+		FREV=$(jq -r '.data.rev // 0' "$f")
+		ID=$(printf '%s' "$LIST" | jq -r --arg n "$N" '.items[]? | select(.name == $n) | .id' | head -1)
+		if [ -z "$ID" ]; then
+			R=$(curl -s -X POST "$URL/api/dungeons" -H 'Content-Type: application/json' -H "X-Admin-Key: $ADMIN_KEY" --data-binary @"$f")
+			echo "::notice title=新建关卡::$N → $R"
+			continue
+		fi
+		SREV=$(curl -s "$URL/api/dungeons/$ID" | jq -r '.data.rev // 0')
+		if [ "$FREV" -gt "$SREV" ]; then
+			R=$(curl -s -X PUT "$URL/api/dungeons/$ID" -H 'Content-Type: application/json' -H "X-Admin-Key: $ADMIN_KEY" --data-binary @"$f")
+			echo "::notice title=更新关卡::$N（rev $SREV → $FREV）→ $R"
+		fi
 	done
 fi
 
