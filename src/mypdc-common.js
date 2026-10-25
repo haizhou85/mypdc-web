@@ -247,3 +247,43 @@ const MyPDC = (function () {
 		}).observe(document.body, { childList: true, subtree: true });
 	});
 })();
+
+// 点队伍里的宠物：已有宠物时直接滚到宠物信息卡片（上游停在搜索栏顶部）；空位仍停在搜索栏，方便找宠物
+(function () {
+	if (typeof editMember !== 'function') return;
+	const orig = editMember;
+	editMember = function (teamNum, isAssist, indexInTeam) { // eslint-disable-line no-global-assign
+		const out = orig.apply(this, arguments);
+		try {
+			const mon = formation.teams[teamNum]?.[isAssist]?.[indexInTeam];
+			// 宽屏左右分栏（side-mode 且宽于 1310px）时编辑框在侧边，不用滚动
+			const sideBySide = document.body.classList.contains('side-mode') && window.innerWidth > 1310;
+			if (mon?.id > 0 && !sideBySide) {
+				// 搜索结果列表随后才渲染，上面的高度会变：分几次对齐；用户自己动手滚动后就不再动
+				let userMoved = false;
+				const stop = () => { userMoved = true; };
+				const evs = ['touchstart', 'wheel', 'keydown', 'mousedown'];
+				evs.forEach(ev => window.addEventListener(ev, stop, { once: true, passive: true }));
+				const align = () => {
+					if (userMoved) return false;
+					const card = document.querySelector('.edit-box .monsterinfo-box');
+					if (!card?.offsetParent) return true;
+					window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - 4, behavior: 'instant' });
+					return true;
+				};
+				let i = 0;
+				const delays = [50, 250, 600, 1200];
+				const step = () => {
+					if (align() && ++i < delays.length) setTimeout(step, delays[i] - delays[i - 1]);
+					else evs.forEach(ev => window.removeEventListener(ev, stop));
+				};
+				setTimeout(step, delays[0]);
+			}
+		} catch (e) { console.error(e); }
+		return out;
+	};
+	const wrapped = editMember;
+	window.addEventListener('load', () => setTimeout(() => {
+		if (typeof editBox !== 'undefined' && editBox.editMon === orig) editBox.editMon = wrapped;
+	}));
+})();
