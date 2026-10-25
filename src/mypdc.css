@@ -505,3 +505,19 @@ html.mypdc-team-loading body { opacity: 0.3; pointer-events: none; }
 	position: fixed; top: 40%; left: 50%; transform: translateX(-50%); z-index: 2000;
 	padding: 12px 20px; border-radius: 10px; background: rgba(0,0,0,0.8); color: #fff; font-size: 16px;
 }
+
+/* ---------- 顶部控制栏精简 ---------- */
+#btn-qrcode, #btn-player-data, #datasource-updatetime { display: none !important; }
+body.mypdc-compact-top label[for="languages"]::after, body.mypdc-compact-top label[for="datasource"]::after { content: none !important; }
+body.mypdc-compact-top .control-box > div, body.mypdc-compact-top .control-box .formation-control {
+	display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-bottom: 4px;
+}
+body.mypdc-compact-top .control-box button, body.mypdc-compact-top .control-box select {
+	font-size: 14px !important; min-height: 30px !important; padding: 2px 8px; margin: 0;
+}
+body.mypdc-compact-top .control-box label { font-size: 14px; }
+body.mypdc-compact-top .control-box .mypdc-impart-toggle { font-size: 14px; margin-left: 0; }
+body.mypdc-compact-top .control-box details.config-display-list > summary { font-size: 14px; }
+body.mypdc-compact-top .control-box .config-display-list .setting { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.mypdc-footer { margin: 24px 8px 12px; text-align: center; }
+.mypdc-footer .mypdc-credit { display: inline; font-size: 11px; color: #888; }

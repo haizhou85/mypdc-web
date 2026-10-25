@@ -287,3 +287,16 @@ const MyPDC = (function () {
 		if (typeof editBox !== 'undefined' && editBox.editMon === orig) editBox.editMon = wrapped;
 	}));
 })();
+
+// 顶部控制栏精简：去掉二维码、我的箱子、数据更新时间按钮；来源声明移到页面最下面；“拖拽时复制”放进“展示信息开关列表”
+(function () {
+	window.addEventListener('load', () => {
+		document.body.classList.add('mypdc-compact-top');
+		const credit = document.querySelector('.mypdc-credit');
+		if (credit) document.body.append(MyPDC.el('footer', { class: 'mypdc-footer' }, credit));
+		const setting = document.querySelector('.config-display-list .setting');
+		const swap = document.getElementById('change-swap-to-copy');
+		const swapLabel = document.querySelector('label[for="change-swap-to-copy"]');
+		if (setting && swap && swapLabel) setting.append(swap, swapLabel);
+	});
+})();

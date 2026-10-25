@@ -10,10 +10,7 @@
 	}
 	.edit-box .search-box, .edit-box .setting-box { padding-left: 6px; padding-right: 6px; }
 	/* 顶部控制栏：按钮加大、可换行 */
-	.control-box { font-size: 15px; }
-	.control-box button, .control-box select { font-size: 15px; min-height: 34px; }
-	.control-box > div { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
-	.mypdc-credit { display: block; width: 100%; font-size: 11px; margin: 2px 0; }
+	.control-box { font-size: 14px; }
 
 	/* 我加的面板：触控尺寸 */
 	.mypdc-chip { font-size: 15px; padding: 6px 12px; border-radius: 18px; }

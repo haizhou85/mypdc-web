@@ -321,11 +321,14 @@
 
 	// ---------- 5) 按钮 ----------
 	window.addEventListener('load', () => {
-		const anchor = document.getElementById('draw-screenshot')?.parentElement;
-		const row = el('div', { class: 'mypdc-team-buttons' },
-			el('button', { type: 'button', onclick: openSave }, '💾 保存到队伍库'),
-			el('button', { type: 'button', onclick: () => openLibrary() }, '📚 队伍库'));
-		if (anchor) anchor.before(row); else document.body.prepend(row);
+		// 和“绘制截图”放在同一行
+		const shot = document.getElementById('draw-screenshot');
+		const btns = [
+			el('button', { type: 'button', class: 'mypdc-team-btn', onclick: openSave }, '💾 保存'),
+			el('button', { type: 'button', class: 'mypdc-team-btn', onclick: () => openLibrary() }, '📚 队伍库'),
+		];
+		if (shot) shot.before(...btns);
+		else document.body.prepend(el('div', { class: 'mypdc-team-buttons' }, btns));
 		openFromHash();
 	});
 	// #teams 打开队伍库；#teams-admin 是管理专属链接
