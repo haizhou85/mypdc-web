@@ -394,7 +394,11 @@
 		);
 		body = el('div', { class: 'mypdc-panel-body' });
 		panel.append(body);
-		document.body.append(openBtn, panel);
+		document.body.append(panel);
+		// 固定放在队伍标题右边（不再悬浮在右下角）
+		const titleBox = document.querySelector('.formation-box .title-box');
+		if (titleBox) { openBtn.classList.add('mypdc-open-inline'); titleBox.append(openBtn); }
+		else document.body.append(openBtn);
 
 		MyPDC.onTeamUpdate(() => render());
 

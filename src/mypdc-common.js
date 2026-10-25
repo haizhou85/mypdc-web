@@ -141,7 +141,7 @@ const MyPDC = (function () {
 			// 用窄于 1310px 的虚拟窗口渲染，宽屏两栏布局的媒体查询不生效，直接得到上游的竖向布局
 			const options = {
 				windowWidth: 1000,
-				onclone: doc => doc.body.classList.remove('side-mode'),
+				onclone: doc => { doc.body.classList.remove('side-mode'); doc.querySelectorAll('.mypdc-open-inline').forEach(b => b.remove()); },
 			};
 			if (transparent) options.backgroundColor = null;
 			html2canvas(target, options).then(canvas => {

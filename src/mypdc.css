@@ -569,3 +569,12 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 	#badge-choose .team-badges input:checked + .badge { outline-width: 14px; }
 	#badge-choose .dialog-control { margin-top: 4px; }
 }
+/* 减伤模拟按钮：固定在队伍标题右边 */
+.formation-box .title-box { display: flex; align-items: center; gap: 8px; }
+.formation-box .title-box > .title-display, .formation-box .title-box > .title-code { flex: 1; min-width: 0; }
+.mypdc-open-btn.mypdc-open-inline {
+	position: static; flex: none; box-shadow: none; padding: 5px 12px; font-size: 14px;
+	width: auto !important; height: auto !important; border-radius: 16px !important;
+}
+.mypdc-open-btn.mypdc-open-inline { font-size: 14px !important; }
+.mypdc-open-btn.mypdc-open-inline::before { content: none !important; }
