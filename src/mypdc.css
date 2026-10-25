@@ -637,3 +637,18 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .mypdc-dg-field textarea, .mypdc-dg-json { width: 100%; box-sizing: border-box; }
 .mypdc-panel .mypdc-dg-danger { color: #d32f2f; }
 .mypdc-dg-edit-actions { position: sticky; bottom: 0; background: var(--mypdc-bg); padding: 6px 0; }
+/* 底部：推荐添加到主屏幕（只在手机上显示） */
+.mypdc-install { display: none; }
+@media (max-width: 760px), (pointer: coarse) {
+	.mypdc-install:not([hidden]) {
+		display: block; margin: 24px 12px 0; padding: 12px 14px; border-radius: 12px;
+		background: rgba(255, 255, 255, 0.92); color: #333; font-size: 14px; line-height: 1.5;
+	}
+}
+.mypdc-install-title { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+.mypdc-install p { margin: 4px 0 8px; }
+.mypdc-install-icon { display: inline-block; margin: 0 3px; padding: 0 3px; border: 1.5px solid #1e88e5; border-radius: 4px; color: #1e88e5; font-weight: bold; line-height: 1.2; }
+.mypdc-install-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.mypdc-install-actions button { font-size: 15px; padding: 6px 14px; border-radius: 18px; border: 1px solid #bbb; background: #f4f4f6; cursor: pointer; }
+.mypdc-install-actions .mypdc-install-primary { background: #1e88e5; color: #fff; border-color: #1e88e5; font-weight: bold; }
+.mypdc-footer { margin-top: 8px !important; }

@@ -356,3 +356,49 @@ const MyPDC = (function () {
 	const meta = document.querySelector('meta[name="viewport"]');
 	if (meta && !/maximum-scale/.test(meta.content)) meta.content += ', maximum-scale=1';
 })();
+
+// 页面底部（来源声明上面）：推荐添加到主屏幕，当作 App 使用
+(function () {
+	let deferred = null; // 安卓 Chrome 等：可以直接弹出安装
+	window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; render(); });
+	window.addEventListener('appinstalled', () => { deferred = null; render(); });
+	const standalone = () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+	const iOS = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+	let box;
+	function render() {
+		if (!box) return;
+		box.innerHTML = '';
+		if (standalone()) { box.hidden = true; return; }
+		box.hidden = false;
+		const { el } = MyPDC;
+		const home = new URL('solo.html', location.href).href;
+		const share = navigator.share
+			? el('button', { type: 'button', onclick: () => navigator.share({ title: document.title, url: home }).catch(() => {}) }, '🔗 分享 / 收藏')
+			: el('button', { type: 'button', onclick: async e => {
+				try { await navigator.clipboard.writeText(home); e.target.textContent = '已复制网址'; } catch (err) { window.prompt('复制网址：', home); } // eslint-disable-line no-alert
+			} }, '🔗 复制网址');
+		box.append(el('div', { class: 'mypdc-install-title' }, '📲 推荐添加到主屏幕，像 App 一样打开'));
+		if (deferred) {
+			box.append(el('p', null, '没有浏览器地址栏，打开更快，画面更大。'),
+				el('div', { class: 'mypdc-install-actions' },
+					el('button', { type: 'button', class: 'mypdc-install-primary', onclick: async () => {
+						deferred.prompt();
+						try { await deferred.userChoice; } catch (e) { /* 忽略 */ }
+						deferred = null; render();
+					} }, '＋ 添加到主屏幕'), share));
+		} else if (iOS) {
+			box.append(el('p', null, '在 Safari 里点底部的分享按钮', el('span', { class: 'mypdc-install-icon' }, '⬆'),
+				'，往下滑选“添加到主屏幕”，再点“添加”。以后从主屏幕的“LaLa PAD”图标打开，没有地址栏，画面更大。'),
+				el('div', { class: 'mypdc-install-actions' }, share));
+		} else {
+			box.append(el('p', null, '在浏览器菜单里选“添加到主屏幕”或“安装应用”。也可以收藏本页。'),
+				el('div', { class: 'mypdc-install-actions' }, share));
+		}
+	}
+	window.addEventListener('load', () => {
+		const footer = document.querySelector('.mypdc-footer');
+		box = MyPDC.el('div', { class: 'mypdc-install' });
+		if (footer) footer.before(box); else document.body.append(box);
+		render();
+	});
+})();

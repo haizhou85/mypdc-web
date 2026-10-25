@@ -59,6 +59,12 @@ patch index.html 'let browser_i18n = (navigator.language||navigator.userLanguage
 SITE_NAME='LaLa个人使用的PAD工具'
 for page in index.html solo.html multi.html triple.html; do
 	patch "$page" '<title>智龙急速阵型</title>' "<title>$SITE_NAME</title>"
+	# iPhone“添加到主屏幕”后像 App 一样全屏打开
+	patch "$page" '<link rel="manifest" href="manifest.webmanifest">' '<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LaLa PAD">
+<link rel="apple-touch-icon" href="images/desktop-icon/192.png">'
 done
 patch index.html '<h1 class="title">智龙急速阵型<br>Puzzle & Dragons Dash Formation</h1>' "<h1 class=\"title\">$SITE_NAME</h1>"
 for lang in "$OUT"/languages/*.js; do
@@ -73,6 +79,8 @@ m = json.load(open(p, encoding='utf-8-sig'))
 m['name'] = name
 m['short_name'] = 'LaLa PAD'
 m['start_url'] = './solo.html'
+m['display'] = 'standalone'
+m['description'] = '智龙迷城组队、宠物搜索、关卡伤害计算'
 open(p, 'w', encoding='utf-8').write(json.dumps(m, ensure_ascii=False, indent='\t'))
 PY
 
@@ -99,6 +107,9 @@ cat > "$OUT/index.html" <<HTML
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>$SITE_NAME</title>
 <link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LaLa PAD">
+<link rel="apple-touch-icon" href="images/desktop-icon/192.png">
 <script>location.replace('solo.html' + location.search + location.hash);</script>
 <meta http-equiv="refresh" content="0; url=solo.html">
 </head>
