@@ -347,3 +347,12 @@ const MyPDC = (function () {
 	});
 	MyPDC.assistOff = { get active() { return state.active; }, fullOutObj, setActive };
 })();
+
+// iPhone：点到输入框（地下城强化、徽章等选单）时 Safari 会自动放大页面。
+// 只在 iOS 上加 maximum-scale=1：可以阻止自动放大，iOS 仍然允许双指手动缩放
+(function () {
+	const iOS = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+	if (!iOS) return;
+	const meta = document.querySelector('meta[name="viewport"]');
+	if (meta && !/maximum-scale/.test(meta.content)) meta.content += ', maximum-scale=1';
+})();
