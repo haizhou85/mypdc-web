@@ -594,3 +594,5 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .search-box .types-div:has(#type-and-or:not(:checked)) .mypdc-or-text { opacity: 1; font-weight: bold; }
 .search-box .types-div #type-and-or:checked + label::after { opacity: 1; font-weight: bold; }
 .search-box .types-div label[for="type-and-or"] { margin-left: 0 !important; }
+/* “编辑界面使用侧栏模式 / 黏性定位”开关不需要 */
+#use-side-mode, label[for="use-side-mode"], #use-sticky, label[for="use-sticky"] { display: none !important; }
