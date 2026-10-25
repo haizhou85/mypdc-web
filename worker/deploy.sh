@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ] || [ -z "${ADMIN_KEY:-}" ]; then
-	echo "没有设置 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / ADMIN_KEY，跳过队伍库后端" >&2
+	echo "::warning title=队伍库后端::没有设置 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / ADMIN_KEY，跳过"
 	exit 0
 fi
 API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
@@ -38,4 +38,11 @@ printf '%s' "$ADMIN_KEY" | $WRANGLER secret put ADMIN_KEY >/dev/null
 
 URL="https://mypdc-teams.$SUB.workers.dev"
 echo "接口地址：$URL"
+# 检查接口是否可用（结果显示在 Actions 的注释里）
+for i in 1 2 3 4 5 6; do
+	CODE=$(curl -s -o /dev/null -w '%{http_code}' "$URL/api/teams?limit=1" || true)
+	[ "$CODE" = "200" ] && break
+	sleep 5
+done
+echo "::notice title=队伍库后端::$URL （接口检查 HTTP $CODE）"
 [ -n "${GITHUB_OUTPUT:-}" ] && echo "api=$URL" >> "$GITHUB_OUTPUT"
