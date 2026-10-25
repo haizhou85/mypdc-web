@@ -481,3 +481,9 @@ html.mypdc-team-loading body { opacity: 0.3; pointer-events: none; }
 	.mypdc-team-info { order: 1; }
 	.mypdc-team-item-actions { order: 2; flex-direction: row; }
 }
+.mypdc-team-admin-view .mypdc-team-admin {
+	margin: 0 0 12px; padding: 10px; border: 1px solid var(--mypdc-line); border-radius: 8px;
+	color: inherit; font-size: 14px; background: var(--mypdc-soft);
+}
+.mypdc-team-login p { margin: 0 0 6px; }
+.mypdc-panel .mypdc-team-login input { flex: 1; min-width: 0; font-size: 16px; padding: 6px 8px; margin: 0; }

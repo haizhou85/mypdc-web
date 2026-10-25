@@ -163,9 +163,10 @@
 	}
 
 	// ---------- 4) 队伍库列表 ----------
-	let lib, libBody, listBox, moreBtn, searchInput, adminBox;
+	let lib, libTitle, libBody, listBox, moreBtn, searchInput, adminBox;
 	let items = [], more = false, loading = false, query = '';
 	let isAdmin = false;
+	let adminView = false; // 通过管理专属链接 #teams-admin 打开
 
 	function buildLibrary() {
 		lib = el('div', { class: 'mypdc-panel mypdc-team-lib display-none' });
@@ -178,25 +179,40 @@
 		libBody = el('div', { class: 'mypdc-panel-body' },
 			el('div', { class: 'mypdc-team-toolbar' }, searchInput,
 				el('button', { type: 'button', onclick: e => copy(listUrl(), e.target) }, '🔗 复制队伍库链接')),
-			listBox, moreBtn, adminBox);
+			listBox, moreBtn);
+		libTitle = el('h2', null, '📚 队伍库');
 		lib.append(
-			el('div', { class: 'mypdc-panel-head' }, el('h2', null, '📚 队伍库'), el('button', { type: 'button', onclick: closeLibrary }, '关闭')),
+			el('div', { class: 'mypdc-panel-head' }, libTitle, el('button', { type: 'button', onclick: closeLibrary }, '关闭')),
 			libBody);
 		document.body.append(lib);
 	}
 
-	function openLibrary() {
+	// admin=true：管理专属链接打开，先输入管理密码，之后每个队伍有删除按钮；普通队伍库不显示任何管理入口
+	async function openLibrary(admin = false) {
 		if (!lib) buildLibrary();
+		adminView = admin === true;
 		lib.classList.remove('display-none');
+		lib.classList.toggle('mypdc-team-admin-view', adminView);
 		document.body.classList.add('mypdc-panel-open');
-		if (location.hash !== '#teams') history.replaceState(history.state, '', location.pathname + location.search + '#teams');
-		checkAdmin().then(renderAdmin);
+		const hash = adminView ? '#teams-admin' : '#teams';
+		if (location.hash !== hash) history.replaceState(history.state, '', location.pathname + location.search + hash);
+		libTitle.textContent = adminView ? '🔒 队伍库管理' : '📚 队伍库';
+		adminBox.remove();
+		isAdmin = false;
+		if (adminView) {
+			libBody.prepend(adminBox);
+			adminBox.innerHTML = '';
+			adminBox.append('检查管理密码…');
+			await checkAdmin();
+			renderAdmin();
+			if (!isAdmin) { listBox.innerHTML = ''; moreBtn.style.display = 'none'; return; }
+		}
 		reload();
 	}
 	function closeLibrary() {
 		lib.classList.add('display-none');
 		document.body.classList.remove('mypdc-panel-open');
-		if (location.hash === '#teams') history.replaceState(history.state, '', location.pathname + location.search);
+		if (location.hash.startsWith('#teams')) history.replaceState(history.state, '', location.pathname + location.search);
 	}
 
 	function reload() { items = []; more = false; listBox.innerHTML = ''; fetchPage(); }
@@ -228,7 +244,7 @@
 			t.members.map(team => el('div', { class: 'mypdc-team-row' }, team.map(headIcon))));
 		const actions = el('div', { class: 'mypdc-team-item-actions' },
 			el('button', { type: 'button', onclick: e => { e.stopPropagation(); copy(shareUrl(t.id), e.target); } }, '🔗'));
-		if (isAdmin) {
+		if (adminView && isAdmin) {
 			const del = el('button', { type: 'button', class: 'mypdc-team-del' }, '🗑');
 			del.onclick = async e => {
 				e.stopPropagation();
@@ -267,21 +283,28 @@
 	function renderAdmin() {
 		adminBox.innerHTML = '';
 		if (isAdmin) {
-			adminBox.append('已进入管理模式：每个队伍右边有 🗑 删除按钮（点两次确认）。 ',
-				el('button', { type: 'button', onclick: () => { save('admin-key', ''); isAdmin = false; renderAdmin(); reload(); } }, '退出管理'));
+			adminBox.append('已登录管理：每个队伍右边有 🗑 删除按钮（点两次确认删除）。 ',
+				el('button', { type: 'button', onclick: () => { save('admin-key', ''); openLibrary(true); } }, '退出登录'));
 			return;
 		}
-		const details = el('details', null, el('summary', null, '管理'));
 		const input = el('input', { type: 'password', placeholder: '管理密码', autocomplete: 'current-password' });
-		const msg = el('span', { class: 'mypdc-team-msg' });
+		const msg = el('div', { class: 'mypdc-team-msg' });
+		const btn = el('button', { type: 'button', class: 'mypdc-team-primary' }, '进入');
 		const go = async () => {
+			btn.disabled = true;
 			save('admin-key', input.value);
 			await checkAdmin();
-			if (isAdmin) { renderAdmin(); reload(); } else { save('admin-key', ''); msg.textContent = ' 密码不对'; }
+			btn.disabled = false;
+			if (isAdmin) { renderAdmin(); reload(); } else { save('admin-key', ''); msg.textContent = '密码不对'; input.select(); }
 		};
+		btn.onclick = go;
 		input.onkeydown = e => { if (e.key === 'Enter') go(); };
-		details.append(input, el('button', { type: 'button', onclick: go }, '进入'), msg);
-		adminBox.append(details);
+		adminBox.append(
+			el('form', { class: 'mypdc-team-login', onsubmit: e => { e.preventDefault(); go(); } },
+				el('p', null, '请输入管理密码。这个浏览器会记住密码，下次打开这个链接直接进入。'),
+				el('div', { class: 'mypdc-team-actions' }, input, btn),
+				msg));
+		setTimeout(() => input.focus(), 50);
 	}
 
 	// ---------- 5) 按钮 ----------
@@ -289,11 +312,16 @@
 		const anchor = document.getElementById('draw-screenshot')?.parentElement;
 		const row = el('div', { class: 'mypdc-team-buttons' },
 			el('button', { type: 'button', onclick: openSave }, '💾 保存到队伍库'),
-			el('button', { type: 'button', onclick: openLibrary }, '📚 队伍库'));
+			el('button', { type: 'button', onclick: () => openLibrary() }, '📚 队伍库'));
 		if (anchor) anchor.before(row); else document.body.prepend(row);
-		if (location.hash === '#teams') openLibrary();
+		openFromHash();
 	});
-	window.addEventListener('hashchange', () => { if (location.hash === '#teams') openLibrary(); });
+	// #teams 打开队伍库；#teams-admin 是管理专属链接
+	function openFromHash() {
+		if (location.hash === '#teams-admin') openLibrary(true);
+		else if (location.hash === '#teams') openLibrary();
+	}
+	window.addEventListener('hashchange', openFromHash);
 
 	MyPDC.teams = { openLibrary, openSave };
 })();
