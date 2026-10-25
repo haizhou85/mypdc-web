@@ -3,7 +3,7 @@
 自用的智龙迷城（Puzzle & Dragons）组队 / 伤害减伤计算网页，参考 PDC ダメージ計算 的功能。
 
 基于 [Mapaler/PADDashFormation](https://github.com/Mapaler/PADDashFormation)（智龙急速阵型）。本仓库**只存放我加的功能**，
-网站由 GitHub Actions 每天自动拉取上游最新代码和怪物数据（日服、美服、韩服），叠加这些功能后发布到 GitHub Pages，
+网站由 GitHub Actions 每天自动拉取上游最新代码和怪物数据（日服、美服、韩服），叠加这些功能后发布到 Cloudflare Pages（https://lalapad.pages.dev/ ）和 GitHub Pages，
 所以游戏更新后数据会自动同步。
 
 ## 功能
