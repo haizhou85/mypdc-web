@@ -42,6 +42,10 @@ for page in solo.html multi.html triple.html; do
 	if [ -z "$vp" ]; then echo "错误：$page 中找不到固定宽度的 viewport，上游可能改了" >&2; exit 1; fi
 	patch "$page" "$vp" '<meta name="viewport" content="width=device-width, initial-scale=1" />'
 done
+# 类型筛选默认 OR（上游默认 AND）
+for page in solo.html multi.html triple.html; do
+	patch "$page" 'name="type-and-or" id="type-and-or" checked>' 'name="type-and-or" id="type-and-or">'
+done
 patch script.js 'const browser_i18n = navigator.language;' 'const browser_i18n = "zh-CN";'
 patch index.html 'let browser_i18n = (navigator.language||navigator.userLanguage);' 'let browser_i18n = "zh-CN";'
 
