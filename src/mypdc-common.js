@@ -372,7 +372,8 @@ const MyPDC = (function () {
 		box.hidden = false;
 		const { el } = MyPDC;
 		const home = new URL('solo.html', location.href).href;
-		const share = navigator.share
+		// iPhone 上网页调出的分享菜单里没有“添加到主屏幕”（只有 Safari 自己的分享按钮有），所以只给复制网址
+		const share = navigator.share && !iOS
 			? el('button', { type: 'button', onclick: () => navigator.share({ title: document.title, url: home }).catch(() => {}) }, '🔗 分享 / 收藏')
 			: el('button', { type: 'button', onclick: async e => {
 				try { await navigator.clipboard.writeText(home); e.target.textContent = '已复制网址'; } catch (err) { window.prompt('复制网址：', home); } // eslint-disable-line no-alert
@@ -387,9 +388,8 @@ const MyPDC = (function () {
 						deferred = null; render();
 					} }, '＋ 添加到主屏幕'), share));
 		} else if (iOS) {
-			box.append(el('p', null, '在 Safari 里点底部的分享按钮', el('span', { class: 'mypdc-install-icon' }, '⬆'),
-				'，往下滑选“添加到主屏幕”，再点“添加”。以后从主屏幕的“LaLa PAD”图标打开，没有地址栏，画面更大。'),
-				el('div', { class: 'mypdc-install-actions' }, share));
+			box.append(el('p', null, '请用 Safari 自己的分享按钮', el('span', { class: 'mypdc-install-icon' }, '⬆'),
+				'（在屏幕底部或地址栏旁边），往下滑选“添加到主屏幕”，再点“添加”。以后从主屏幕的“LaLa PAD”图标打开，没有地址栏，画面更大。'));
 		} else {
 			box.append(el('p', null, '在浏览器菜单里选“添加到主屏幕”或“安装应用”。也可以收藏本页。'),
 				el('div', { class: 'mypdc-install-actions' }, share));
