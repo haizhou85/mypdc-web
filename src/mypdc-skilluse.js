@@ -81,12 +81,27 @@
 		if (!skills.shield.some(s => s.key === pick.shield)) pick.shield = '';
 		if (!skills.hp.some(s => s.key === pick.hp)) pick.hp = '';
 
+		// 不用原生下拉框：iPhone Safari 上放在缩放过的编队区里，重绘后文字会变大
 		const select = (kind, label, list) => {
-			const sel = el('select', { onchange: e => { pick[kind] = e.target.value; render(teamIdx); } },
-				el('option', { value: '' }, list.length ? '不开技' : '（队伍里没有）'),
-				list.map(s => el('option', { value: s.key, selected: s.key === pick[kind] }, s.text)));
-			sel.disabled = !list.length;
-			return el('label', { class: 'mypdc-skilluse-pick' }, el('span', null, label), sel);
+			const none = list.length ? '不开技' : '（队伍里没有）';
+			const cur = list.find(s => s.key === pick[kind]);
+			const dd = el('details', { class: 'mypdc-dd' + (list.length ? '' : ' mypdc-dd-disabled') + (cur ? ' mypdc-dd-on' : '') },
+				el('summary', null, cur ? cur.text : none));
+			if (list.length) {
+				const choose = key => { dd.open = false; pick[kind] = key; render(teamIdx); };
+				dd.append(el('div', { class: 'mypdc-dd-list' },
+					[{ key: '', text: '不开技' }, ...list].map(s => el('button', {
+						type: 'button', class: s.key === (pick[kind] || '') ? 'mypdc-dd-cur' : null,
+						onclick: () => choose(s.key),
+					}, s.text))));
+				// 点外面关闭
+				dd.addEventListener('toggle', () => {
+					if (!dd.open) return;
+					const close = e => { if (!dd.contains(e.target)) { dd.open = false; document.removeEventListener('click', close, true); } };
+					setTimeout(() => document.addEventListener('click', close, true));
+				});
+			} else dd.addEventListener('click', e => e.preventDefault());
+			return el('div', { class: 'mypdc-skilluse-pick' }, el('span', null, label), dd);
 		};
 
 		row.innerHTML = '';

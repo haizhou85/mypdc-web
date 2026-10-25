@@ -490,15 +490,13 @@ html.mypdc-team-loading body { opacity: 0.3; pointer-events: none; }
 
 /* ---------- 编队：选择要开的盾 / HP上限技能 ---------- */
 .mypdc-skilluse { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 4px 0; font-size: 14px; }
-.mypdc-skilluse-pick { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; }
+.mypdc-skilluse-pick { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 14em; }
 .mypdc-skilluse-pick > span { white-space: nowrap; }
-.mypdc-skilluse-pick select { max-width: 100%; min-width: 0; font-size: 14px; }
 /* 开技后改写过的 HP / 减伤 / 等效HP 用黄色显示 */
 .tIf-total-hp.mypdc-skill-on .general, .tIf-total-hp.mypdc-skill-on .awoken-bind,
 .tIf-total-hp.mypdc-skill-on .reduce-scale { color: #f57c00 !important; font-weight: bold; }
 @media (max-width: 760px) {
 	.mypdc-skilluse-pick { flex-basis: 100%; }
-	.mypdc-skilluse-pick select { flex: 1; font-size: 15px; min-height: 32px; }
 }
 .mypdc-team-item.mypdc-team-opening { opacity: 0.5; }
 .mypdc-team-opening-note {
@@ -531,4 +529,23 @@ body.mypdc-compact-top #btn-set-dungeon-enchance::after { content: "地下城" !
 body.mypdc-compact-top .control-box .formation-control { gap: 4px; }
 /* iOS Safari 的“文字自动放大”会在重绘后把部分文字（例如开技下拉框）放大：关掉 */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-.mypdc-skilluse select { -webkit-text-size-adjust: 100%; line-height: 1.2; height: auto; }
+/* 开技选择（自制下拉） */
+.mypdc-dd { position: relative; flex: 1; min-width: 0; font-size: 14px; }
+.mypdc-dd > summary {
+	list-style: none; cursor: pointer; padding: 3px 24px 3px 8px; border: 1px solid #999; border-radius: 6px;
+	background: rgba(255, 255, 255, 0.9); color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative;
+}
+.mypdc-dd > summary::-webkit-details-marker { display: none; }
+.mypdc-dd > summary::after { content: "▾"; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+.mypdc-dd.mypdc-dd-on > summary { background: #fff3e0; border-color: #f57c00; font-weight: bold; }
+.mypdc-dd.mypdc-dd-disabled > summary { opacity: 0.55; cursor: default; }
+.mypdc-dd-list {
+	position: absolute; left: 0; right: 0; top: calc(100% + 2px); z-index: 50; max-height: 260px; overflow: auto;
+	background: #fff; color: #222; border: 1px solid #999; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.mypdc-dd-list button {
+	display: block; width: 100%; text-align: left; border: none; border-bottom: 1px solid #eee; background: none; color: inherit;
+	padding: 8px 10px; font-size: 14px; cursor: pointer;
+}
+.mypdc-dd-list button:hover { background: #fff3e0; }
+.mypdc-dd-list button.mypdc-dd-cur { font-weight: bold; color: #e65100; }
