@@ -17,7 +17,7 @@ jobs:
           echo "::notice title=队伍 ${{ inputs.id }}::$R"
           L=$(curl -s "https://mypdc-teams.haizhou-guo.workers.dev/api/teams?limit=5" | head -c 3000)
           echo "::notice title=列表::$L"
-          for u in https://lalapad.pages.dev/ https://lalapad.pages.dev/solo.html https://lalapad.pages.dev/mypdc-config.js; do
+          for u in "https://lalapad.pages.dev/solo.html?team=1&x=2"; do
             echo "::notice title=$u::$(curl -s -o /tmp/b -w '%{http_code} %{url_effective}' -L "$u") $(head -c 200 /tmp/b | tr '\n' ' ')"
           done
           C=$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://lalapad.pages.dev' -D - "https://mypdc-teams.haizhou-guo.workers.dev/api/teams?limit=1" | grep -i access-control-allow-origin | tr -d '\r')
