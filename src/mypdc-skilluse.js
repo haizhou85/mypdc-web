@@ -94,17 +94,40 @@
 
 		const shield = skills.shield.find(s => s.key === pick.shield);
 		const hpUp = skills.hp.find(s => s.key === pick.hp);
-		if ((shield || hpUp) && st.tHP > 0) {
-			const leader = st.totalReduce || 0;
-			const hp = Math.round(st.tHP * (hpUp ? hpUp.rate : 1));
-			const reduce = 1 - (1 - leader) * (1 - (shield ? shield.rate : 0));
-			const ehp = Math.floor(hp / (1 - reduce));
-			row.append(el('div', { class: 'mypdc-skilluse-result' },
-				'开技后：HP ', el('b', null, fmt(hp)),
-				' · 减伤 ', el('b', null, (reduce * 100).toFixed(2) + '%'),
-				reduce >= 1 ? ' · 无敌' : [' · 等效HP ', el('b', null, fmt(ehp))],
-				el('span', { class: 'mypdc-skilluse-base' }, `（不开技：等效HP ${fmt(st.tReduceHP || st.tHP)}）`),
-				shield?.prob < 1 ? el('div', { class: 'mypdc-skilluse-note' }, '按概率盾发动时计算') : null));
+		applyToTotals(box, st, shield, hpUp);
+	}
+
+	// 开技后直接改写徽章旁边的 HP / 减伤 / 等效HP（上游每次刷新会重写，所以刷新后再套用一次）
+	function applyToTotals(box, st, shield, hpUp) {
+		const hpDom = box.querySelector('.tIf-total-hp');
+		if (!hpDom) return;
+		const on = !!(shield || hpUp) && st.tHP > 0;
+		hpDom.classList.toggle('mypdc-skill-on', on);
+		if (!on && !hpDom.dataset.mypdcChanged) return; // 不开技且没改过：保持上游的显示
+		if (on) hpDom.dataset.mypdcChanged = '1'; else delete hpDom.dataset.mypdcChanged;
+		const mul = hpUp ? hpUp.rate : 1;
+		const reduce = 1 - (1 - (st.totalReduce || 0)) * (1 - (shield ? shield.rate : 0));
+		const hp = Math.round(st.tHP * mul);
+		const hpNo = Math.round((st.tHPNoAwoken || 0) * mul);
+		const ehp = v => (reduce >= 1 ? Infinity : Math.floor(v / (1 - reduce)));
+		const show = (dom, v) => {
+			if (!dom) return;
+			const text = Number.isFinite(v) ? v.bigNumberToString({ sub: true }) : '∞';
+			if (typeof setTextContentAndAttribute === 'function') setTextContentAndAttribute(dom, text);
+			else dom.textContent = typeof text === 'string' ? text : String(v);
+		};
+		show(hpDom.querySelector(':scope > .general'), hp);
+		show(hpDom.querySelector(':scope > .awoken-bind'), hpNo);
+		const r = hpDom.querySelector('.reduce');
+		if (r) {
+			r.classList.toggle('no-reduce', reduce === 0);
+			const scale = r.querySelector('.reduce-scale');
+			if (scale) {
+				if (typeof setTextContentAndAttribute === 'function') setTextContentAndAttribute(scale, (reduce * 100).toFixed(2));
+				else scale.textContent = (reduce * 100).toFixed(2);
+			}
+			show(r.querySelector('.general'), ehp(hp));
+			show(r.querySelector('.awoken-bind'), ehp(hpNo));
 		}
 	}
 

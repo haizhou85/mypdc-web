@@ -86,7 +86,7 @@
 		const box = el('div', { class: 'mypdc-team-banner' });
 		if (info.error) box.append(info.error);
 		else {
-			box.append(
+			box.append(...[
 				el('div', { class: 'mypdc-team-banner-title' }, `📚 队伍库 #${info.id}　`, el('b', null, info.title),
 					info.author ? el('span', { class: 'mypdc-team-meta' }, ` · ${info.author}`) : null,
 					el('span', { class: 'mypdc-team-meta' }, ` · ${fmtTime(info.created)}`)),
@@ -94,7 +94,8 @@
 				el('div', { class: 'mypdc-team-actions' },
 					el('button', { type: 'button', onclick: e => copy(shareUrl(info.id), e.target) }, '🔗 复制分享链接'),
 					el('button', { type: 'button', onclick: () => openLibrary() }, '📚 队伍库'),
-					el('span', { class: 'mypdc-team-meta' }, '可以直接修改；再保存会存成新的队伍，不会改动这一个')));
+					el('span', { class: 'mypdc-team-meta' }, '可以直接修改；再保存会存成新的队伍，不会改动这一个')),
+			].filter(Boolean));
 		}
 		const target = document.querySelector('.formation-box') || document.body.firstElementChild;
 		target.before(box);
