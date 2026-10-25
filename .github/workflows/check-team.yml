@@ -1,0 +1,19 @@
+# 手动检查队伍库里某个队伍的数据（结果显示在运行记录的注释里）
+name: 检查队伍库数据
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 队伍编号
+        required: true
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          R=$(curl -s "https://mypdc-teams.haizhou-guo.workers.dev/api/teams/${{ inputs.id }}" | head -c 3000)
+          echo "::notice title=队伍 ${{ inputs.id }}::$R"
+          L=$(curl -s "https://mypdc-teams.haizhou-guo.workers.dev/api/teams?limit=5" | head -c 3000)
+          echo "::notice title=列表::$L"
