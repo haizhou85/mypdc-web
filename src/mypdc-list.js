@@ -347,7 +347,15 @@
 	}
 
 	// 精简上游搜索栏：类型 AND/OR 挪到“类型：”右边；去掉杀觉醒快捷按钮、官方觉醒排序开关、快速开关一栏
+	// 类型 AND/OR 开关：两边都写上文字（OR ◯ AND），当前生效的一边加粗
+	function typeAndOrLabels() {
+		const ipt = document.getElementById('type-and-or');
+		if (!ipt || document.querySelector('.mypdc-or-text')) return;
+		ipt.before(el('span', { class: 'mypdc-or-text' }, 'OR'));
+	}
+
 	function tidySearchBox() {
+		typeAndOrLabels();
 		const fast = document.querySelector('.search-box .fast-switch');
 		fast?.querySelectorAll('input[type=checkbox]').forEach(i => { i.checked = false; });
 		const official = document.getElementById('show-official-awoken-sorting');
@@ -467,7 +475,6 @@
 			),
 			groups,
 			impartBox,
-			el('div', { class: 'mypdc-hint' }, '点选后自动重新搜索，可以和上面的属性、类型、觉醒条件一起用。“生成珠子”包括转珠、洗版、随机产珠和固定位置生成，多选时按上面的 AND/OR 关系。更细的技能条件在下面的“特殊搜索”里。'),
 		);
 		panel.addEventListener('toggle', () => { save('skill-filter-open', panel.open); refresh(); });
 		document.querySelector('.search-box')?.addEventListener('toggle', refresh);

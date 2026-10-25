@@ -588,3 +588,9 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .mypdc-result-fab.mypdc-show { display: block; }
 .mypdc-result-fab.mypdc-none { background: #777; cursor: default; }
 body.mypdc-panel-open .mypdc-result-fab { display: none; }
+/* 类型 AND/OR：OR ◯ AND，当前生效的一边加粗 */
+.search-box .types-div .mypdc-or-text { order: 1; margin-left: 10px; margin-right: 4px; opacity: 0.6; }
+.search-box .types-div label[for="type-and-or"]::after { content: "AND" !important; opacity: 0.6; margin-left: 4px; }
+.search-box .types-div:has(#type-and-or:not(:checked)) .mypdc-or-text { opacity: 1; font-weight: bold; }
+.search-box .types-div #type-and-or:checked + label::after { opacity: 1; font-weight: bold; }
+.search-box .types-div label[for="type-and-or"] { margin-left: 0 !important; }
