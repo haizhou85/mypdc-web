@@ -247,7 +247,10 @@
 		if (cur?.data?.note) wrap.append(el('div', { class: 'mypdc-dg-note' }, cur.data.note));
 		(data.floors || []).forEach(fl => (fl.enemies || []).forEach(en => {
 			const info = teamInfo(floorStage(fl));
-			const stageHp = info && base && info.maxHp !== base.maxHp ? el('span', { class: 'mypdc-dg-stagehp' }, `熟成HP ${fmt(info.maxHp)}`) : null;
+			// 这一层的队伍 HP（含熟成、开技 HP 上限、受击前 HP%）
+			const start = info ? Math.floor(info.maxHp * state.startHp / 100) : 0;
+			const stageHp = info ? el('span', { class: 'mypdc-dg-stagehp' },
+				(base && info.maxHp !== base.maxHp ? '熟成' : '') + `HP ${fmt(start)}`) : null;
 			wrap.append(el('div', { class: 'mypdc-dg-enemy-title' }, el('span', null, `(${fl.name || '-'}) ${en.name || cardName(en.cardId) || '敌人'}`), stageHp));
 			const rows = el('div', { class: 'mypdc-dg-skills' });
 			(en.skills || []).forEach(sk => {
@@ -265,7 +268,8 @@
 						el('span', { class: `mypdc-dg-raw mypdc-attr-${attr}` }, ATTR[attr] + ' ' + dmgText),
 						need ? el('span', { class: 'mypdc-dg-need', title: '还差几个属性减伤潜觉（1% / 2.5%）才扛得住' },
 							latentIcon(LATENT[0][attr]), `×${need[0] ?? '-'}`, latentIcon(LATENT[1][attr]), `×${need[1] ?? '-'}`) : el('span', { class: 'mypdc-dg-need' }),
-						r ? el('span', { class: 'mypdc-dg-taken ' + (r.survived ? 'ok' : 'dead'), title: r.survived ? `剩余 ${fmt(r.remain)}` : '扛不住' }, fmt(r.taken)) : null)));
+						r ? el('span', { class: 'mypdc-dg-taken ' + (r.survived ? 'ok' : 'dead'), title: r.survived ? `剩余 ${fmt(r.remain)}` : '扛不住' }, fmt(r.taken),
+							el('span', { class: 'mypdc-dg-diff' }, r.survived ? `剩 ${fmt(r.remain)}` : `差 ${fmt(r.taken - r.start + 1)}`)) : null)));
 			});
 			wrap.append(el('div', { class: 'mypdc-dg-enemy' }, headIcon(en.cardId, en.attr), rows));
 		}));

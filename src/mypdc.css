@@ -615,7 +615,7 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .mypdc-dg-pre .mypdc-dg-skill-name { color: #1e88e5; }
 .mypdc-dg-pretag { font-size: 11px; border: 1px solid #1e88e5; border-radius: 4px; padding: 0 3px; }
 .mypdc-dg-skill-note { color: #888; font-size: 12px; }
-.mypdc-dg-skill-row { display: grid; grid-template-columns: 1fr auto 6.5em; align-items: center; gap: 6px; padding: 2px 6px; }
+.mypdc-dg-skill-row { display: grid; grid-template-columns: 1fr auto 7em; align-items: center; gap: 6px; padding: 2px 6px; }
 .mypdc-dg-raw { font-variant-numeric: tabular-nums; }
 .mypdc-dg-need { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; white-space: nowrap; }
 .mypdc-dg-latent { display: inline-block; width: 22px; height: 22px; overflow: hidden; margin-left: 4px; }
@@ -657,3 +657,6 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .mypdc-dg-skills-row { gap: 6px; }
 .mypdc-dg-skillpick { display: flex; align-items: center; gap: 4px; flex: 1 1 100%; min-width: 0; }
 .mypdc-dg-skillpick select { flex: 1; min-width: 0; font-size: 14px; padding: 3px; }
+.mypdc-dg-taken { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
+.mypdc-dg-diff { font-size: 11px; font-weight: normal; }
+.mypdc-dg-stagehp { font-weight: bold; }
