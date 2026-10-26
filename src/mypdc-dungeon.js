@@ -21,7 +21,7 @@
 	const LATENT = [[6, 7, 8, 9, 10], [32, 33, 34, 35, 36]];
 
 	const state = Object.assign({ id: 0, teamIdx: 0, awokenBind: false, includeProb: false, startHp: 100, brokens: 0 }, load('dungeon-state', {}));
-	const saveState = () => save('dungeon-state', state);
+	const saveState = () => save('dungeon-state', Object.assign({}, state, { brokens: 0 }));
 
 	let list = null;        // 关卡列表
 	let cur = null;         // 当前关卡（完整数据）
@@ -236,7 +236,7 @@
 			box.append(el('div', { class: 'mypdc-row mypdc-dg-skills-row' },
 				sel('shield', '🛡 盾 ', skills.shield), sel('hp', '❤ HP上限 ', skills.hp),
 				el('label', { title: '部位破坏觉醒：每破坏 1 个部位，HP 等 ×1.2' }, '部位破坏 ',
-					el('select', { onchange: e => { state.brokens = +e.target.value; saveState(); render(); } },
+					el('select', { onchange: e => { state.brokens = +e.target.value; render(); } },
 						Array.from({ length: 11 }, (_, i) => el('option', { value: i, selected: (state.brokens || 0) === i }, String(i))))), ' 个'));
 		}
 		box.append(el('div', { class: 'mypdc-row mypdc-dg-hp' },
@@ -407,6 +407,7 @@
 	}
 
 	async function open() {
+		state.brokens = 0; // 部位破坏数每次打开都从 0 开始
 		panel.classList.remove('display-none');
 		document.body.classList.add('mypdc-panel-open');
 		render();
