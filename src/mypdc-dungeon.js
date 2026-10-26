@@ -220,11 +220,22 @@
 			box.append(el('div', null, '请先在页面上编好队伍。'));
 			return box;
 		}
-		const use = info.use;
+		// 开技：盾 / HP上限（和编队上方的选择同步）
+		const su = MyPDC.skillUse;
+		const ti = teamsCount === 2 ? 0 : Math.min(state.teamIdx, (formation?.teams?.length || 1) - 1);
+		const st = MyPDC.teamStats[ti];
+		if (su?.teamSkills && st?.team) {
+			const skills = su.teamSkills(st.team);
+			const pick = su.getPick(ti);
+			const sel = (kind, label, list) => el('label', { class: 'mypdc-dg-skillpick' }, label,
+				el('select', { disabled: !list.length, onchange: e => { su.setPick(ti, kind, e.target.value); render(); } },
+					el('option', { value: '' }, list.length ? '不开技' : '（队伍里没有）'),
+					list.map(s => el('option', { value: s.key, selected: s.key === pick[kind] }, s.text))));
+			box.append(el('div', { class: 'mypdc-row mypdc-dg-skills-row' },
+				sel('shield', '🛡 盾 ', skills.shield), sel('hp', '❤ HP上限 ', skills.hp)));
+		}
 		box.append(el('div', { class: 'mypdc-row mypdc-dg-hp' },
 			el('b', null, `HP ${fmt(info.maxHp)}`),
-			use.hpMul > 1 || use.shield ? el('span', { class: 'mypdc-dg-use' }, '开技：' +
-				[use.shield ? `减伤${Math.round(use.shield.rate * 100)}%` : '', use.hpMul > 1 ? `HP×${+use.hpMul.toFixed(2)}` : ''].filter(Boolean).join(' · ')) : null,
 			el('span', { class: 'mypdc-dg-attrs' }, ATTR.map((a, i) => el('span', { class: `mypdc-attr-${i}` },
 				`${a}${+((1 - keepAt(info, i, state.startHp, 0)) * 100).toFixed(1)}%`)))));
 		return box;

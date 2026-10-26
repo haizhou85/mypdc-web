@@ -167,5 +167,13 @@
 		return { shield, hpMul: hp ? hp.rate : 1 };
 	}
 
-	MyPDC.skillUse = { teamSkills, render, current };
+	// 关卡伤害面板里也可以选（和编队上方的选择同步）
+	function getPick(teamIdx) { return picks[teamIdx] || { shield: '', hp: '' }; }
+	function setPick(teamIdx, kind, key) {
+		picks[teamIdx] = picks[teamIdx] || { shield: '', hp: '' };
+		picks[teamIdx][kind] = key;
+		render(teamIdx);
+	}
+
+	MyPDC.skillUse = { teamSkills, render, current, getPick, setPick };
 })();

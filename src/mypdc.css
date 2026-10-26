@@ -654,3 +654,6 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .mypdc-footer { margin-top: 8px !important; }
 .mypdc-dg-enemy-title { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .mypdc-dg-stagehp { font-weight: normal; }
+.mypdc-dg-skills-row { gap: 6px; }
+.mypdc-dg-skillpick { display: flex; align-items: center; gap: 4px; flex: 1 1 100%; min-width: 0; }
+.mypdc-dg-skillpick select { flex: 1; min-width: 0; font-size: 14px; padding: 3px; }
