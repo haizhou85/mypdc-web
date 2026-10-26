@@ -531,8 +531,8 @@
 		renderTimer = setTimeout(() => { renderTimer = null; doRender(); }, 30);
 	}
 
-	function sortedRows(heads) {
-		const rows = heads.map(li => ({ li, card: li.card }));
+	function sortedRows(cards) {
+		const rows = cards.map(card => ({ card }));
 		const col = COLUMNS.find(c => c.key === lstate.key && c.value);
 		if (col) {
 			const dir = lstate.desc ? -1 : 1;
@@ -546,12 +546,51 @@
 		return { rows, col };
 	}
 
+	// ---------------- 搜索结果很多时不拖慢 ----------------
+	// 上游会给每个结果都生成一个头像（几千个时要好几秒）。这里截住结果：列表模式只按需画当前显示的行，
+	// 图标模式只把排序后的前 iconLimit 个交给上游画头像
+	const ICON_PAGE = 300;
+	let fullCards = null, iconLimit = ICON_PAGE, origShowSearch = null;
+	function hookShowSearch() {
+		if (typeof showSearch !== 'function' || showSearch.__mypdc) return;
+		origShowSearch = showSearch;
+		const wrapped = function (arr, addition) {
+			if (typeof arr === 'number') arr = [arr];
+			if (!Array.isArray(arr)) return origShowSearch.apply(this, arguments);
+			fullCards = arr.map(x => (typeof x === 'object' ? x : Cards[x])).filter(c => c);
+			iconLimit = ICON_PAGE; shown = PAGE;
+			const r = origShowSearch.call(this, iconSlice(), addition);
+			render();
+			return r;
+		};
+		wrapped.__mypdc = true;
+		showSearch = wrapped; // eslint-disable-line no-global-assign
+	}
+	function iconSlice() {
+		if (!S.cfg.iconView) return [];
+		return sortedRows(fullCards || []).rows.slice(0, iconLimit).map(r => r.card);
+	}
+	// 图标模式下排序或数量变了：重新交给上游画
+	function redrawIcons() {
+		if (!origShowSearch || !fullCards) return;
+		origShowSearch.call(window, iconSlice());
+	}
+	function cardHead(card) {
+		if (typeof createCardA !== 'function') return el('span');
+		const dom = createCardA({ noBoxCount: true });
+		dom.removeAttribute('href');
+		try { changeid({ id: card.id }, dom); } catch (e) { /* 忽略 */ }
+		return dom;
+	}
+
 	function setSort(key) {
 		const c = COLUMNS.find(x => x.key === key);
 		if (!c) { lstate.key = null; }
 		else if (lstate.key === key) lstate.desc = !lstate.desc;
 		else { lstate.key = key; lstate.desc = !c.asc; }
-		save('list-sort', lstate); shown = PAGE; render();
+		save('list-sort', lstate); shown = PAGE;
+		if (S.cfg.iconView && fullCards) { iconLimit = ICON_PAGE; redrawIcons(); }
+		render();
 	}
 
 	// 排序栏（图标模式下用来选排序；列表模式下直接点表头）
@@ -573,26 +612,29 @@
 		document.body.classList.toggle('mypdc-listview', listView);
 		renderSortBar();
 		if (!wrap) return;
-		const heads = [...ul.children].filter(li => li.card);
-		const { rows, col } = sortedRows(heads);
-		updateCount(heads.length);
+		const cards = fullCards || [...ul.children].filter(li => li.card).map(li => li.card);
+		updateCount(cards.length);
 
-		if (!listView) { // 图标模式：按同样的排序重新排列头像，并在头像上显示数值
-			reordering = true;
-			const frag = document.createDocumentFragment();
-			rows.forEach(({ li, card }) => {
+		if (!listView) { // 图标模式：上游画的是排序后的前 iconLimit 个，头像上显示排序数值
+			const col = COLUMNS.find(c => c.key === lstate.key && c.value);
+			[...ul.children].filter(li => li.card).forEach(li => {
 				let badge = li.querySelector('.mypdc-sortval');
 				if (col && !col.text && col.key !== 'id') {
 					if (!badge) { badge = el('span', { class: 'mypdc-sortval' }); li.append(badge); }
-					const v = col.value(card);
+					const v = col.value(li.card);
 					badge.textContent = Number.isFinite(v) ? fmt(v) : '-';
 				} else badge?.remove();
-				frag.append(li);
 			});
-			ul.append(frag);
-			setTimeout(() => { reordering = false; });
+			let more = ul.parentElement.querySelector('.mypdc-icon-more');
+			if (cards.length > iconLimit) {
+				if (!more) { more = el('button', { type: 'button', class: 'mypdc-more mypdc-icon-more', onclick: () => { iconLimit += ICON_PAGE; redrawIcons(); } }); ul.after(more); }
+				more.textContent = `显示更多（${Math.min(iconLimit, cards.length)} / ${cards.length}）`;
+			} else more?.remove();
 			return;
 		}
+		ul.parentElement.querySelector('.mypdc-icon-more')?.remove();
+		const { rows } = sortedRows(cards);
+		const heads = cards;
 
 		const scroll = wrap.scrollTop;
 		wrap.innerHTML = '';
@@ -613,10 +655,9 @@
 		const table = el('table', { class: 'mypdc-list-table' + (compact ? ' mypdc-compact' : '') }, el('thead', null, head));
 		const currentId = parseInt(document.getElementById('card-id')?.value, 10);
 
-		rows.slice(0, shown).forEach(({ li, card }) => {
+		rows.slice(0, shown).forEach(({ card }) => {
 			const st = S.stats(card);
-			const icon = li.head ? li.head.cloneNode(true) : el('span');
-			icon.removeAttribute('href');
+			const icon = cardHead(card);
 			const attrs = card.attrs.filter(a => a >= 0 && a <= 5);
 			const supers = (card.superAwakenings || []);
 			const cd = Number.isFinite(minCd(card)) ? minCd(card) : '-';
@@ -703,7 +744,7 @@
 		box.addEventListener('change', handler);
 		box.addEventListener('click', e => { if (e.target.closest('button, .awoken-icon, .type-icon') && !e.target.closest('select')) handler(e); });
 		// 打开搜索栏时，如果还没有结果就先搜一次
-		box.addEventListener('toggle', () => { if (box.open && !ul?.children.length) autoSearch(); });
+		box.addEventListener('toggle', () => { if (box.open && !fullCards && !ul?.children.length) autoSearch(); });
 	}
 
 	// ---------------- 选中宠物时把加蛋设为 +297 / +891 ----------------
@@ -775,7 +816,8 @@
 		sortBar = el('div', { class: 'mypdc-sort-bar' });
 		ul.before(sortBar, wrap);
 		new MutationObserver(() => { if (reordering) return; shown = PAGE; render(); }).observe(ul, { childList: true });
-		S.onChange(render);
+		let lastIcon = S.cfg.iconView;
+		S.onChange(() => { if (S.cfg.iconView && (S.cfg.iconView !== lastIcon || lstate.key)) redrawIcons(); lastIcon = S.cfg.iconView; render(); });
 		render();
 	}
 
@@ -800,8 +842,9 @@
 		buildClearAll();
 		buildSkillFilter();
 		buildList();
+		setTimeout(hookShowSearch);
 		setupAutoSearch();
 		setupPlus();
 	});
-	MyPDC.list = { render, applySkillFilter, fstate, autoSearch };
+	MyPDC.list = { render, applySkillFilter, fstate, autoSearch, get fullCards() { return fullCards; } };
 })();
