@@ -20,7 +20,7 @@
 	// 属性减伤潜觉：普通 1%（id 6~10）、+版 2.5%（id 32~36）
 	const LATENT = [[6, 7, 8, 9, 10], [32, 33, 34, 35, 36]];
 
-	const state = Object.assign({ id: 0, teamIdx: 0, awokenBind: false, includeProb: false, startHp: 100 }, load('dungeon-state', {}));
+	const state = Object.assign({ id: 0, teamIdx: 0, awokenBind: false, includeProb: false, startHp: 100, brokens: 0 }, load('dungeon-state', {}));
 	const saveState = () => save('dungeon-state', state);
 
 	let list = null;        // 关卡列表
@@ -61,7 +61,8 @@
 	let stageCache = new Map();
 	function stageRatio(ti, stage) {
 		if (teamsCount === 2 || typeof countTeamHp !== 'function') return [1, 1];
-		const key = ti + ':' + stage;
+		const brokens = state.brokens || 0;
+		const key = ti + ':' + stage + ':' + brokens;
 		if (stageCache.has(key)) return stageCache.get(key);
 		let res = [1, 1];
 		const team = formation.teams[ti];
@@ -69,9 +70,10 @@
 		if (team && dge) {
 			const [l1, l2] = leaderIds(ti);
 			const sum = (t, noAw) => countTeamHp(t, l1, l2, solo, noAw).reduce((a, b) => a + b, 0);
-			const saved = dge.stage;
+			const saved = dge.stage, savedB = dge.brokens;
 			try {
 				dge.stage = stage;
+				dge.brokens = brokens; // 部位破坏数（面板里选择）
 				const members = team[0].map((m, i) => {
 					if (!m || !(m.id > 0)) return m;
 					const ab = calculateAbility(m, team[1][i], solo, teamsCount);
@@ -82,10 +84,10 @@
 					return c;
 				});
 				const t2 = [members, ...team.slice(1)];
-				dge.stage = saved;
+				dge.stage = saved; dge.brokens = savedB;
 				const b0 = sum(team, false), b1 = sum(team, true);
 				res = [b0 > 0 ? sum(t2, false) / b0 : 1, b1 > 0 ? sum(t2, true) / b1 : 1];
-			} catch (e) { console.error(e); } finally { dge.stage = saved; }
+			} catch (e) { console.error(e); } finally { dge.stage = saved; dge.brokens = savedB; }
 		}
 		stageCache.set(key, res);
 		return res;
@@ -232,7 +234,10 @@
 					el('option', { value: '' }, list.length ? '不开技' : '（队伍里没有）'),
 					list.map(s => el('option', { value: s.key, selected: s.key === pick[kind] }, s.text))));
 			box.append(el('div', { class: 'mypdc-row mypdc-dg-skills-row' },
-				sel('shield', '🛡 盾 ', skills.shield), sel('hp', '❤ HP上限 ', skills.hp)));
+				sel('shield', '🛡 盾 ', skills.shield), sel('hp', '❤ HP上限 ', skills.hp),
+				el('label', { title: '部位破坏觉醒：每破坏 1 个部位，HP 等 ×1.2' }, '部位破坏 ',
+					el('select', { onchange: e => { state.brokens = +e.target.value; saveState(); render(); } },
+						Array.from({ length: 11 }, (_, i) => el('option', { value: i, selected: (state.brokens || 0) === i }, String(i))))), ' 个'));
 		}
 		box.append(el('div', { class: 'mypdc-row mypdc-dg-hp' },
 			el('b', null, `HP ${fmt(info.maxHp)}`),
