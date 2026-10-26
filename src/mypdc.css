@@ -660,3 +660,11 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .mypdc-dg-taken { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
 .mypdc-dg-diff { font-size: 11px; font-weight: normal; }
 .mypdc-dg-stagehp { font-weight: bold; }
+/* 手机：关卡伤害面板不出现左右滚动（Safari 下拉框会按最长选项撑宽） */
+.mypdc-dg-panel .mypdc-panel-body { overflow-x: hidden; }
+.mypdc-dg-panel select { max-width: 100%; }
+.mypdc-dg-skillpick select { width: 100%; text-overflow: ellipsis; }
+.mypdc-dg-skillpick { max-width: 100%; box-sizing: border-box; }
+.mypdc-dg-panel .mypdc-row > * { min-width: 0; max-width: 100%; }
+.mypdc-dg-skill-name, .mypdc-dg-enemy-title > span:first-child { overflow-wrap: anywhere; min-width: 0; }
+.mypdc-dg-skill-row > * { min-width: 0; }
