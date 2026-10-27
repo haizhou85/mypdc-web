@@ -735,3 +735,8 @@ label[for="show-team-awoken-count"]::after { content: "队伍觉醒统计" !impo
 .formation-box .team-total-info-count { margin-top: 6px; }
 label[for="show-member-ability"]::after { content: "队员能力" !important; }
 label[for="show-member-awoken"]::after { content: "队员觉醒" !important; }
+.formation-box .team-total-info-count::before {
+	content: "队伍稀有度/属性/类型："; display: block; font-family: var(--font-family);
+}
+.formation-box .team-total-info-count { flex-wrap: wrap; }
+.formation-box .team-total-info-count::before { flex-basis: 100%; }
