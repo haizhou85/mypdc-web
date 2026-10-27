@@ -727,3 +727,4 @@ body:not(.mypdc-show-rarecd) .abilitys .mypdc-rarecd { display: none; }
 .team-ability .abilitys .mypdc-rarecd .r { margin-right: 6px; }
 .team-ability .abilitys .mypdc-avgcap[hidden] { display: none !important; }
 body:not(.mypdc-show-rarecd) .team-ability .abilitys .mypdc-rarecd { display: none !important; }
+.formation-box .team-ability { margin-top: 8px; }
