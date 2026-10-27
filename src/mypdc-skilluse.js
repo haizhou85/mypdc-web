@@ -3,7 +3,8 @@
 (function () {
 	const { el, fmt, teamStats, cardName } = MyPDC;
 	const ATTR = ['火', '水', '木', '光', '暗', '心'];
-	const picks = []; // 每个队伍选中的技能 { shield: key, hp: key }
+	const picks = []; // 每个队伍选中的技能 { shield: key, hp: key, attr: key }
+	const TARGET_TEXT = { self: '自己', 'leader-self': '队长', 'leader-helper': '好友队长', 'sub-members': '队员', 'left-neighbor': '左边', 'right-neighbor': '右边' };
 
 	// 技能解析结果里的限时效果（不看随机技能，结果不确定）；多段进化技能记下是第几段
 	function timedEffects(skillId) {
@@ -20,6 +21,8 @@
 			if (turns && n.kind === SkillKinds.ReduceDamage) out.push({ type: 'shield', turns, stage, node: n });
 			if (turns && n.kind === SkillKinds.PowerUp && !n.attrs?.length && !n.types?.length && !n.targets && !n.condition &&
 				n.value?.kind === SkillPowerUpKind.Multiplier && n.value.hp > 1) out.push({ type: 'hp', turns, stage, node: n });
+			if (turns && n.kind === SkillKinds.ChangeAttribute && (n.targets || []).length && !(n.targets || []).some(t => String(t).startsWith('enemy')))
+				out.push({ type: 'attr', turns, stage, node: n });
 			for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v, turns, stage);
 		};
 		try { walk(skillParser(skillId), 0, 0); } catch (e) { /* 解析失败当作没有 */ }
@@ -38,7 +41,9 @@
 	// 队伍里能用的盾 / HP上限技能（队员本身和辅助的主动技能）
 	function teamSkills(team) {
 		const [members, assists] = team;
-		const res = { shield: [], hp: [] };
+		const res = { shield: [], hp: [], attr: [] };
+		const leaderIdx = team[3] || 0;
+		const last = members.length - 1;
 		const seen = new Set();
 		members.forEach((m, i) => {
 			[[m, ''], [assists?.[i], '辅助']].forEach(([mem, tag]) => {
@@ -56,6 +61,20 @@
 							key, rate: s.pct, prob: s.prob, mask: s.mask,
 							text: `${s.attrText}减伤${Math.round(s.pct * 100)}%${s.prob < 1 ? `（${Math.round(s.prob * 100)}%几率）` : ''} ${e.turns}回合 · ${who}`,
 						});
+					} else if (e.type === 'attr') {
+						// 变属性：只改宠物本身的属性，武器（辅助）的属性不变，所以会影响武装共鸣、同属性加成和队长技倍率
+						const attr = e.node.attr ?? 0;
+						const idx = new Set();
+						(e.node.targets || []).forEach(t => {
+							if (t === 'self') idx.add(i);
+							else if (t === 'leader-self') idx.add(leaderIdx);
+							else if (t === 'leader-helper' && teamsCount !== 2) idx.add(last);
+							else if (t === 'sub-members') members.forEach((_, j) => { if (j !== leaderIdx && j !== last) idx.add(j); });
+							else if (t === 'left-neighbor' && i > 0) idx.add(i - 1);
+							else if (t === 'right-neighbor' && i < last) idx.add(i + 1);
+						});
+						const who2 = (e.node.targets || []).map(t => TARGET_TEXT[t] || t).join('、');
+						res.attr.push({ key, attr, idx: [...idx], text: `${who2}变为${ATTR[attr] || '?'}属性 ${e.turns}回合 · ${who}` });
 					} else {
 						const mul = e.node.value.hp;
 						res.hp.push({ key, rate: mul, text: `HP上限×${+mul.toFixed(2)} ${e.turns}回合 · ${who}` });
@@ -78,9 +97,10 @@
 			box.after(row);
 		}
 		const skills = teamSkills(st.team);
-		const pick = picks[teamIdx] = picks[teamIdx] || { shield: '', hp: '' };
+		const pick = picks[teamIdx] = picks[teamIdx] || { shield: '', hp: '', attr: '' };
 		if (!skills.shield.some(s => s.key === pick.shield)) pick.shield = '';
 		if (!skills.hp.some(s => s.key === pick.hp)) pick.hp = '';
+		if (pick.attr && !skills.attr.some(s => s.key === pick.attr)) { pick.attr = ''; setTimeout(() => refreshAll?.(formation)); }
 
 		// 不用原生下拉框：iPhone Safari 上放在缩放过的编队区里，重绘后文字会变大
 		const select = (kind, label, list) => {
@@ -89,7 +109,7 @@
 			const dd = el('details', { class: 'mypdc-dd' + (list.length ? '' : ' mypdc-dd-disabled') + (cur ? ' mypdc-dd-on' : '') },
 				el('summary', null, cur ? cur.text : none));
 			if (list.length) {
-				const choose = key => { dd.open = false; pick[kind] = key; render(teamIdx); };
+				const choose = key => { dd.open = false; setPick(teamIdx, kind, key); };
 				dd.append(el('div', { class: 'mypdc-dd-list' },
 					[{ key: '', text: '不开技' }, ...list].map(s => el('button', {
 						type: 'button', class: s.key === (pick[kind] || '') ? 'mypdc-dd-cur' : null,
@@ -106,7 +126,7 @@
 		};
 
 		row.innerHTML = '';
-		row.append(select('shield', '🛡 盾', skills.shield), select('hp', '❤ HP上限', skills.hp));
+		row.append(select('shield', '🛡 盾', skills.shield), select('hp', '❤ HP上限', skills.hp), select('attr', '🎨 变属性', skills.attr));
 
 		const shield = skills.shield.find(s => s.key === pick.shield);
 		const hpUp = skills.hp.find(s => s.key === pick.hp);
@@ -168,12 +188,55 @@
 	}
 
 	// 关卡伤害面板里也可以选（和编队上方的选择同步）
-	function getPick(teamIdx) { return picks[teamIdx] || { shield: '', hp: '' }; }
+	function getPick(teamIdx) { return picks[teamIdx] || { shield: '', hp: '', attr: '' }; }
 	function setPick(teamIdx, kind, key) {
-		picks[teamIdx] = picks[teamIdx] || { shield: '', hp: '' };
+		picks[teamIdx] = picks[teamIdx] || { shield: '', hp: '', attr: '' };
 		picks[teamIdx][kind] = key;
-		render(teamIdx);
+		// 变属性会改变能力值、队长技倍率：整体重算；盾和 HP 上限只改合计
+		if (kind === 'attr' && typeof refreshAll === 'function') refreshAll(formation);
+		else render(teamIdx);
 	}
 
-	MyPDC.skillUse = { teamSkills, render, current, getPick, setPick };
+	// ---------- 变属性：计算时临时把宠物的主属性改掉（武器属性不变），算完恢复 ----------
+	let depth = 0, undoList = null;
+	function applyAttr() {
+		const undo = [];
+		(formation?.teams || []).forEach((team, ti) => {
+			const key = picks[ti]?.attr;
+			if (!key) return;
+			const sk = teamSkills(team).attr.find(s => s.key === key);
+			if (!sk) return;
+			sk.idx.forEach(j => {
+				const card = Cards[team[0][j]?.id];
+				if (!card || !(card.id > 0) || !Array.isArray(card.attrs)) return;
+				undo.push([card, card.attrs]);
+				card.attrs = [sk.attr, ...card.attrs.slice(1)];
+			});
+		});
+		return undo;
+	}
+	function withAttr(fn, self, args) {
+		if (depth === 0) undoList = applyAttr();
+		depth++;
+		try { return fn.apply(self, args); } finally {
+			depth--;
+			if (depth === 0 && undoList) { for (let k = undoList.length - 1; k >= 0; k--) undoList[k][0].attrs = undoList[k][1]; undoList = null; }
+		}
+	}
+	function hasAttr() { return picks.some(p => p?.attr); }
+	function hook(name) {
+		const orig = window[name] ?? (typeof globalThis[name] === 'function' ? globalThis[name] : null);
+		if (typeof orig !== 'function' || orig.__mypdcAttr) return;
+		const wrapped = function () { return hasAttr() ? withAttr(orig, this, arguments) : orig.apply(this, arguments); };
+		wrapped.__mypdcAttr = true;
+		return wrapped;
+	}
+	window.addEventListener('load', () => setTimeout(() => {
+		if (typeof refreshAll === 'function') { const w = hook('refreshAll'); if (w) refreshAll = w; } // eslint-disable-line no-global-assign
+		if (typeof refreshTeamTotalHP === 'function') { const w = hook('refreshTeamTotalHP'); if (w) refreshTeamTotalHP = w; } // eslint-disable-line no-global-assign
+		if (typeof refreshFormationTotalHP === 'function') { const w = hook('refreshFormationTotalHP'); if (w) refreshFormationTotalHP = w; } // eslint-disable-line no-global-assign
+		if (typeof refreshAbility === 'function') { const w = hook('refreshAbility'); if (w) refreshAbility = w; } // eslint-disable-line no-global-assign
+	}));
+
+	MyPDC.skillUse = { teamSkills, render, current, getPick, setPick, withAttr: fn => (hasAttr() ? withAttr(fn, null, []) : fn()) };
 })();

@@ -67,28 +67,31 @@
 		let res = [1, 1];
 		const team = formation.teams[ti];
 		const dge = formation.dungeonEnchance;
+		const run = () => {
 		if (team && dge) {
-			const [l1, l2] = leaderIds(ti);
-			const sum = (t, noAw) => countTeamHp(t, l1, l2, solo, noAw).reduce((a, b) => a + b, 0);
-			const saved = dge.stage, savedB = dge.brokens;
-			try {
-				dge.stage = stage;
-				dge.brokens = brokens; // 部位破坏数（面板里选择）
-				const members = team[0].map((m, i) => {
-					if (!m || !(m.id > 0)) return m;
-					const ab = calculateAbility(m, team[1][i], solo, teamsCount);
-					if (!ab) return m;
-					const c = Object.assign(Object.create(Object.getPrototypeOf(m)), m);
-					c.ability = ab.map(a => a[0]);
-					c.abilityNoAwoken = ab.map(a => a[1]);
-					return c;
-				});
-				const t2 = [members, ...team.slice(1)];
-				dge.stage = saved; dge.brokens = savedB;
-				const b0 = sum(team, false), b1 = sum(team, true);
-				res = [b0 > 0 ? sum(t2, false) / b0 : 1, b1 > 0 ? sum(t2, true) / b1 : 1];
-			} catch (e) { console.error(e); } finally { dge.stage = saved; dge.brokens = savedB; }
-		}
+				const [l1, l2] = leaderIds(ti);
+				const sum = (t, noAw) => countTeamHp(t, l1, l2, solo, noAw).reduce((a, b) => a + b, 0);
+				const saved = dge.stage, savedB = dge.brokens;
+				try {
+					dge.stage = stage;
+					dge.brokens = brokens; // 部位破坏数（面板里选择）
+					const members = team[0].map((m, i) => {
+						if (!m || !(m.id > 0)) return m;
+						const ab = calculateAbility(m, team[1][i], solo, teamsCount);
+						if (!ab) return m;
+						const c = Object.assign(Object.create(Object.getPrototypeOf(m)), m);
+						c.ability = ab.map(a => a[0]);
+						c.abilityNoAwoken = ab.map(a => a[1]);
+						return c;
+					});
+					const t2 = [members, ...team.slice(1)];
+					dge.stage = saved; dge.brokens = savedB;
+					const b0 = sum(team, false), b1 = sum(team, true);
+					res = [b0 > 0 ? sum(t2, false) / b0 : 1, b1 > 0 ? sum(t2, true) / b1 : 1];
+				} catch (e) { console.error(e); } finally { dge.stage = saved; dge.brokens = savedB; }
+			}
+		};
+		if (MyPDC.skillUse?.withAttr) MyPDC.skillUse.withAttr(run); else run();
 		stageCache.set(key, res);
 		return res;
 	}
@@ -234,7 +237,7 @@
 					el('option', { value: '' }, list.length ? '不开技' : '（队伍里没有）'),
 					list.map(s => el('option', { value: s.key, selected: s.key === pick[kind] }, s.text))));
 			box.append(el('div', { class: 'mypdc-row mypdc-dg-skills-row' },
-				sel('shield', '🛡 盾 ', skills.shield), sel('hp', '❤ HP上限 ', skills.hp),
+				sel('shield', '🛡 盾 ', skills.shield), sel('hp', '❤ HP上限 ', skills.hp), sel('attr', '🎨 变属性 ', skills.attr || []),
 				el('label', { title: '部位破坏觉醒：每破坏 1 个部位，HP 等 ×1.2' }, '部位破坏 ',
 					el('select', { onchange: e => { state.brokens = +e.target.value; render(); } },
 						Array.from({ length: 11 }, (_, i) => el('option', { value: i, selected: (state.brokens || 0) === i }, String(i))))), ' 个'));
