@@ -150,3 +150,4 @@ body.mypdc-desk .formation-box .team-awoken, body.mypdc-desk .formation-box .tea
 	body.mypdc-desk .edit-box > .search-box #search-attr { zoom: 0.72; }
 }
 body.mypdc-desk { overflow-x: hidden; }
+html:has(body.mypdc-desk) { overflow-x: hidden; }

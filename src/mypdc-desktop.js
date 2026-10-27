@@ -3,7 +3,8 @@
 // 左栏：队伍 + 正在编辑的队员详情；右栏：搜索条件和结果列表一直展开（独立滚动）。
 (function () {
 	const MIN = 860; // 横屏平板、折叠屏展开横屏也用电脑布局（900~1199 时左栏缩小）
-	const isDesk = () => window.innerWidth >= MIN;
+	// 只有横屏（宽大于高）才用两栏；竖屏（包括折叠屏展开竖屏、平板竖屏）一律单栏
+	const isDesk = () => window.innerWidth >= MIN && window.innerWidth > window.innerHeight;
 	let moved = null; // 移到右栏的节点和原来的位置
 	let placeholder;
 
@@ -65,6 +66,7 @@
 	}, 300));
 	let t;
 	window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { apply(); sizeHead(); }, 150); });
+	window.addEventListener('orientationchange', () => setTimeout(() => { apply(); sizeHead(); }, 400));
 
 	MyPDC.desk = { isDesk };
 })();

@@ -435,3 +435,21 @@ const MyPDC = (function () {
 	}
 	MyPDC.onTeamUpdate(ti => { if (ti >= 0) mark(ti); else (formation?.teams || []).forEach((_, i) => mark(i)); });
 })();
+
+// 竖屏但比手机宽的设备（折叠屏展开竖屏、平板竖屏）：按 700 宽的手机版排版，再放大到整个屏幕
+(function () {
+	const meta = document.querySelector('meta[name="viewport"]');
+	if (!meta) return;
+	const iOS = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+	const tail = iOS ? ', maximum-scale=1' : '';
+	function fit() {
+		const touch = navigator.maxTouchPoints > 0;
+		const portrait = window.matchMedia('(orientation: portrait)').matches;
+		const shortSide = Math.min(screen.width, screen.height);
+		const want = touch && portrait && shortSide > 700 ? 'width=700' + tail : 'width=device-width, initial-scale=1' + tail;
+		if (meta.content !== want) meta.content = want;
+	}
+	fit();
+	window.addEventListener('orientationchange', () => setTimeout(fit, 100));
+	window.matchMedia('(orientation: portrait)').addEventListener?.('change', fit);
+})();
