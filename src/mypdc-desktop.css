@@ -157,3 +157,12 @@ body.mypdc-dragging .formation-box .team-members .monster, body.mypdc-dragging .
 	position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 3000;
 	background: rgba(0, 0, 0, 0.85); color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 14px;
 }
+/* 浏览模式：没在编辑队员时点列表，只显示宠物信息 */
+body.mypdc-desk.mypdc-browse .edit-box.display-none > .sticky-box,
+body.mypdc-desk.mypdc-browse .edit-box.display-none > .setting-box { display: block !important; }
+body.mypdc-desk.mypdc-browse .edit-box.display-none > .sticky-box { margin-top: 12px; border-radius: var(--desk-radius) var(--desk-radius) 0 0; border-top: none; padding-top: 12px; }
+body.mypdc-desk.mypdc-browse .edit-box.display-none > .setting-box { border-radius: 0 0 var(--desk-radius) var(--desk-radius); padding-bottom: 14px; }
+body.mypdc-desk.mypdc-browse .edit-box.display-none .row-mon-latent { display: none !important; }
+body.mypdc-desk.mypdc-browse > .mypdc-desk-empty { display: none; }
+/* 底部声明放在右栏下面，不被左边固定的队伍盖住 */
+body.mypdc-desk > .mypdc-footer { grid-column: 2; margin: 16px 0 8px; position: relative; z-index: 1; }

@@ -76,6 +76,7 @@
 			const sb = searchBox(); if (sb && !sb.open) sb.open = true;
 			const open = !box.classList.contains('display-none');
 			if (wasOpen && !open && !MyPDC.noAutoScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+			if (open !== wasOpen) document.body.classList.remove('mypdc-browse');
 			wasOpen = open;
 		})
 			.observe(box, { attributes: true, attributeFilter: ['class'] });
@@ -84,6 +85,14 @@
 	let t;
 	window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { apply(); sizeHead(); }, 150); });
 	window.addEventListener('orientationchange', () => setTimeout(() => { apply(); sizeHead(); }, 400));
+
+	// 没有在编辑队员时，点结果列表里的宠物：只显示宠物信息（没有留空格子 / 取消 / 保存）
+	document.addEventListener('click', e => {
+		if (!document.body.classList.contains('mypdc-desk')) return;
+		if (!e.target.closest?.('.mypdc-desk-results .mypdc-list-table tbody, .mypdc-desk-results .search-mon-list .monster')) return;
+		const box = document.querySelector('.edit-box');
+		if (box?.classList.contains('display-none')) document.body.classList.add('mypdc-browse');
+	}, true);
 
 	MyPDC.desk = { isDesk };
 })();
