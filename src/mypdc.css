@@ -720,3 +720,10 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .abilitys .mypdc-rarecd { white-space: nowrap; font-weight: bold; color: #555; }
 .abilitys .mypdc-rarecd .r { color: #e6a700; margin-right: 6px; }
 body:not(.mypdc-show-rarecd) .abilitys .mypdc-rarecd { display: none; }
+/* 队员三维、稀有度/CD、平均伤害上限：每行同样的行高，图标同宽，文字左边对齐 */
+.team-ability .abilitys > * { display: flex !important; align-items: center; line-height: 1.35; min-height: 1.35em; margin: 0; padding: 0; white-space: nowrap; }
+.team-ability .abilitys > :is(.hp, .atk, .rcv)::before { flex: none; margin-right: 3px; }
+.team-ability .abilitys .mypdc-avgcap::before { content: "⚡"; flex: none; width: 1em; margin-right: 3px; text-align: center; font-size: 1em; }
+.team-ability .abilitys .mypdc-rarecd .r { margin-right: 6px; }
+.team-ability .abilitys .mypdc-avgcap[hidden] { display: none !important; }
+body:not(.mypdc-show-rarecd) .team-ability .abilitys .mypdc-rarecd { display: none !important; }
