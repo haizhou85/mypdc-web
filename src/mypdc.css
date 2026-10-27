@@ -710,3 +710,7 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 /* 搜索结果的头像：什么都不加 */
 :is(.mypdc-list-icon, .edit-box .search-mon-list) .monster > :not(.attrs) { display: none !important; }
 :is(.mypdc-list-icon, .edit-box .search-mon-list) .mypdc-sortval { display: none !important; }
+/* 图标模式：头像下方显示编号 */
+.edit-box .search-mon-list .monster > .id {
+	display: block !important; position: absolute; left: 0; right: 0; bottom: 2px; text-align: center;
+}
