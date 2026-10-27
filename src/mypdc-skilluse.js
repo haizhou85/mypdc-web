@@ -252,3 +252,65 @@
 
 	MyPDC.skillUse = { teamSkills, render, current, getPick, setPick, withAttr: fn => (hasAttr() ? withAttr(fn, null, []) : fn()) };
 })();
+
+// 队伍觉醒效果：部位破坏素材掉率 =（1 + 全队部位破坏觉醒数）× 10% × 队长技倍率 × 好友队长技倍率
+// 队长技“潜入地下城时是队长”才生效，变身宠物按变身前各形态里最大的倍率算
+(function () {
+	const { el, teamStats, leaderIds } = MyPDC;
+	function forms(id) {
+		const out = [], seen = new Set();
+		const q = [id];
+		while (q.length && out.length < 8) {
+			const x = q.shift();
+			if (!(x > 0) || seen.has(x)) continue;
+			seen.add(x);
+			const c = Cards[x];
+			if (!c) continue;
+			out.push(c);
+			q.push(...(c.henshinFrom || []));
+		}
+		return out;
+	}
+	function partBreakMul(id) {
+		let best = 1;
+		forms(id).forEach(c => {
+			if (!c.leaderSkillId) return;
+			const walk = n => {
+				if (Array.isArray(n)) { n.forEach(walk); return; }
+				if (!n || typeof n !== 'object') return;
+				if (n.kind === SkillKinds.RateMultiply && n.rate === 'part_break') best = Math.max(best, Number(n.value?.value) || 1);
+				for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v);
+			};
+			try { walk(skillParser(c.leaderSkillId)); } catch (e) { /* 忽略 */ }
+		});
+		return best;
+	}
+	function update(ti) {
+		const big = typeof teamBigBoxs !== 'undefined' ? teamBigBoxs[ti] : null;
+		const box = big?.querySelector('.team-awoken-effect > ul');
+		const team = formation?.teams?.[ti];
+		if (!box || !team || typeof Skills === 'undefined' || Skills.length < 1000) return;
+		let li = box.querySelector('.mypdc-partbreak');
+		if (!li) {
+			const heartL = [...box.children].find(x => x.querySelector('[data-awoken-icon="59"]'));
+			li = el('li', { class: 'mypdc-partbreak', title: '部位破坏素材掉率 =（1 + 部位破坏觉醒数）× 10% × 队长技倍率 × 好友队长技倍率' },
+				el('icon', { class: 'awoken-icon', 'data-awoken-icon': 131 }),
+				el('icon', { class: 'icon-skill', 'data-icon-type': 'rate-mul-part_break' }),
+				el('span', { class: 'count', 'data-postfix': '%' }));
+			if (heartL) heartL.before(li); else box.append(li);
+		}
+		const n = typeof awokenCountInTeam === 'function' ? awokenCountInTeam(team, 131, solo, teamsCount) : 0;
+		const [l1, l2] = leaderIds(ti);
+		const rate = (1 + n) * 0.1 * partBreakMul(l1) * partBreakMul(l2);
+		const v = Math.round(Math.min(1, rate) * 1000) / 10;
+		const span = li.querySelector('.count');
+		span.setAttribute('data-value', v);
+		span.textContent = '';
+		li.classList.toggle('mypdc-partbreak-on', n > 0 || rate > 0.1);
+	}
+	MyPDC.onTeamUpdate(ti => { if (ti >= 0) update(ti); });
+	const t = setInterval(() => {
+		if (typeof Skills !== 'undefined' && Skills.length > 1000) { clearInterval(t); teamStats.forEach((s, i) => s && update(i)); }
+	}, 500);
+	MyPDC.partBreak = { partBreakMul, update };
+})();
