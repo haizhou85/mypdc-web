@@ -728,3 +728,10 @@ body:not(.mypdc-show-rarecd) .abilitys .mypdc-rarecd { display: none; }
 .team-ability .abilitys .mypdc-avgcap[hidden] { display: none !important; }
 body:not(.mypdc-show-rarecd) .team-ability .abilitys .mypdc-rarecd { display: none !important; }
 .formation-box .team-ability { margin-top: 8px; }
+/* 展示信息开关精简 */
+:is(#show-member-types, #show-meter, #show-team-attrtype-count, #show-team-awoken-effect) + label { display: none !important; }
+label[for="show-team-total-info"]::after { content: "队伍能力统计" !important; }
+label[for="show-team-awoken-count"]::after { content: "队伍觉醒统计" !important; }
+.formation-box .team-total-info-count { margin-top: 6px; }
+label[for="show-member-ability"]::after { content: "队员能力" !important; }
+label[for="show-member-awoken"]::after { content: "队员觉醒" !important; }

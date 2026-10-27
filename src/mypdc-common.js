@@ -453,3 +453,30 @@ const MyPDC = (function () {
 	window.addEventListener('orientationchange', () => setTimeout(fit, 100));
 	window.matchMedia('(orientation: portrait)').addEventListener?.('change', fit);
 })();
+
+// 展示信息开关精简：队员觉醒、队员能力；队伍能力统计、队伍觉醒统计（含稀有度/属性/类型计数、觉醒效果、觉醒总计）。
+// 队员类型固定显示，计量条固定不显示。稀有度/属性/类型计数挪到觉醒总计下面。
+(function () {
+	const set = (id, on) => {
+		const i = document.getElementById(id);
+		if (!i || i.checked === on) return;
+		i.checked = on;
+		i.dispatchEvent(new Event('change'));
+	};
+	window.addEventListener('load', () => setTimeout(() => {
+		set('show-member-types', true);
+		set('show-meter', false);
+		const sync = () => {
+			const on = document.getElementById('show-team-awoken-count')?.checked ?? true;
+			set('show-team-attrtype-count', on);
+			set('show-team-awoken-effect', on);
+		};
+		sync();
+		document.getElementById('show-team-awoken-count')?.addEventListener('change', sync);
+		document.querySelectorAll('.formation-box .team-bigbox').forEach(big => {
+			const cnt = big.querySelector('.team-total-info-count');
+			const aw = big.querySelector('.team-awoken');
+			if (cnt && aw) aw.after(cnt);
+		});
+	}, 300));
+})();

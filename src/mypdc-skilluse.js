@@ -468,18 +468,8 @@
 			d.append(el('span', { class: 'r' }, `${card.rarity}★`), cd ? `CD${cd}` : '');
 		});
 	}
-	function buildSwitch() {
-		const list = document.querySelector('.config-display-list .in-team');
-		if (!list || document.getElementById('mypdc-show-rarecd')) return;
-		const on = load(KEY, true);
-		document.body.classList.toggle('mypdc-show-rarecd', on);
-		const ipt = el('input', { type: 'checkbox', class: 'switch-ipt', id: 'mypdc-show-rarecd', checked: on, onchange: e => {
-			save(KEY, e.target.checked); document.body.classList.toggle('mypdc-show-rarecd', e.target.checked);
-		} });
-		list.append(ipt, el('label', { for: 'mypdc-show-rarecd' }, '队员稀有度和CD'));
-	}
 	window.addEventListener('load', () => {
-		buildSwitch();
+		document.body.classList.add('mypdc-show-rarecd');
 		// 头像固定显示：编号、加蛋、觉醒数
 		document.body.classList.add('show-card-id', 'show-member-plus-point', 'show-member-awoken-count');
 	});
