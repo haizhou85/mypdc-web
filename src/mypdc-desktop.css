@@ -147,3 +147,13 @@ body.mypdc-desk .formation-box .team-awoken, body.mypdc-desk .formation-box .tea
 	body.mypdc-desk .edit-box > .search-box #search-attr { zoom: 0.72; }
 }
 body.mypdc-desk, html:has(body.mypdc-desk) { overflow-x: clip; }
+/* 拖动搜索结果到队伍 */
+body.mypdc-desk .mypdc-desk-results .mypdc-list-table tbody[draggable="true"] { cursor: grab; }
+body.mypdc-dragging .formation-box .team-members .monster, body.mypdc-dragging .formation-box .team-assist .monster {
+	outline: 2px dashed rgba(224, 69, 123, 0.5); outline-offset: -2px; border-radius: 8px;
+}
+.formation-box .monster.mypdc-drop-target { outline: 4px solid #e0457b !important; outline-offset: -2px; transform: scale(1.05); }
+.mypdc-toast {
+	position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 3000;
+	background: rgba(0, 0, 0, 0.85); color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 14px;
+}

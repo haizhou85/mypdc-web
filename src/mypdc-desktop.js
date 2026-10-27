@@ -75,7 +75,7 @@
 			if (!isDesk()) return;
 			const sb = searchBox(); if (sb && !sb.open) sb.open = true;
 			const open = !box.classList.contains('display-none');
-			if (wasOpen && !open) window.scrollTo({ top: 0, behavior: 'smooth' });
+			if (wasOpen && !open && !MyPDC.noAutoScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
 			wasOpen = open;
 		})
 			.observe(box, { attributes: true, attributeFilter: ['class'] });
@@ -101,4 +101,87 @@
 		e.preventDefault(); e.stopPropagation();
 		editMember(ti, isAssist, idx);
 	}, true);
+})();
+
+// 电脑布局：从搜索结果列表（或图标）直接拖到队伍里的位置。手机不变（列表不能拖）。
+// 放下时按“打开编辑 → 选这只宠物 → 保存修改”的流程处理，等级、觉醒、加蛋等和手动选择时一样。
+(function () {
+	const isDesk = () => document.body.classList.contains('mypdc-desk');
+	let dragId = 0;
+
+	function markRows() {
+		document.querySelectorAll('.mypdc-desk-results .mypdc-list-table tbody').forEach(tb => {
+			if (isDesk()) tb.setAttribute('draggable', 'true'); else tb.removeAttribute('draggable');
+		});
+	}
+	window.addEventListener('load', () => setTimeout(() => {
+		const wrap = document.querySelector('.mypdc-list-wrap');
+		if (wrap) new MutationObserver(markRows).observe(wrap, { childList: true, subtree: true });
+		markRows();
+	}, 500));
+
+	// 列表行：开始拖动
+	document.addEventListener('dragstart', e => {
+		if (!isDesk()) return;
+		const tb = e.target.closest?.('.mypdc-list-table tbody');
+		const head = e.target.closest?.('.search-mon-list .monster');
+		let id = 0;
+		if (tb) id = parseInt(tb.querySelector('td:nth-child(2)')?.textContent, 10) || parseInt(tb.dataset.id, 10) || 0;
+		else if (head) id = parseInt(head.dataset.cardid, 10) || 0;
+		if (!(id > 0)) return;
+		dragId = id;
+		e.dataTransfer.setData('card-id', String(id));
+		e.dataTransfer.setData('text/plain', String(id));
+		e.dataTransfer.effectAllowed = 'copy';
+		document.body.classList.add('mypdc-dragging');
+	}, true);
+	document.addEventListener('dragend', () => { dragId = 0; document.body.classList.remove('mypdc-dragging'); clearHover(); }, true);
+
+	const slotOf = el => el?.closest?.('.formation-box .team-members .monster[data-team], .formation-box .team-assist .monster[data-team]');
+	let hover = null;
+	function clearHover() { hover?.classList.remove('mypdc-drop-target'); hover = null; }
+	document.addEventListener('dragover', e => {
+		if (!dragId) return;
+		const slot = slotOf(e.target);
+		if (!slot) { clearHover(); return; }
+		e.preventDefault();
+		e.dataTransfer.dropEffect = 'copy';
+		if (hover !== slot) { clearHover(); hover = slot; slot.classList.add('mypdc-drop-target'); }
+	}, true);
+
+	document.addEventListener('drop', e => {
+		if (!dragId) return;
+		const slot = slotOf(e.target);
+		if (!slot) return;
+		e.preventDefault(); e.stopImmediatePropagation();
+		const id = dragId; dragId = 0; clearHover();
+		document.body.classList.remove('mypdc-dragging');
+		place(+slot.dataset.team, +slot.dataset.assist, +slot.dataset.index, id);
+	}, true);
+
+	function place(ti, isAssist, idx, id) {
+		const card = Cards[id];
+		if (!card) return;
+		if (isAssist && !card.canAssist) { flash(`${MyPDC.cardName(id)} 不能当辅助`); return; }
+		const box = document.querySelector('.edit-box');
+		const wasOpen = box && !box.classList.contains('display-none');
+		const prev = wasOpen ? editBox.memberIdx?.slice() : null;
+		const y = window.scrollY;
+		MyPDC.noAutoScroll = true;
+		try {
+			editBox.editMon(ti, isAssist, idx);
+			const input = document.getElementById('card-id');
+			input.value = id;
+			document.getElementById('form-id-search').onchange?.();
+			box.querySelector('.button-box .button-done')?.onclick?.();
+			if (prev && !(prev[0] === ti && prev[1] === isAssist && prev[2] === idx)) editBox.editMon(prev[0], prev[1], prev[2]);
+		} catch (err) { console.error(err); }
+		window.scrollTo({ top: y, behavior: 'instant' });
+		setTimeout(() => { window.scrollTo({ top: y, behavior: 'instant' }); MyPDC.noAutoScroll = false; }, 1400);
+	}
+	function flash(text) {
+		const n = MyPDC.el('div', { class: 'mypdc-toast' }, text);
+		document.body.append(n);
+		setTimeout(() => n.remove(), 2200);
+	}
 })();

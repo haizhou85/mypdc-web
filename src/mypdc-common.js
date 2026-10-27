@@ -267,7 +267,7 @@ const MyPDC = (function () {
 				const evs = ['touchstart', 'wheel', 'keydown', 'mousedown'];
 				evs.forEach(ev => window.addEventListener(ev, stop, { once: true, passive: true }));
 				const align = () => {
-					if (userMoved) return false;
+					if (userMoved || MyPDC.noAutoScroll) return false;
 					// 点潜觉时滚到潜觉那一行，其他情况滚到宠物信息卡片
 					const card = document.querySelector(target === 'latent' ? '.edit-box .setting-box .row-mon-latent' : '.edit-box .monsterinfo-box');
 					if (!card?.offsetParent) return true;
