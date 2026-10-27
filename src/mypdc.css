@@ -675,3 +675,21 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .tIf-total-hp .mypdc-avgcap-total::before { content: "⚡"; }
 /* 封觉醒时的 HP 不显示 */
 .tIf-total-hp .awoken-bind { display: none !important; }
+/* 徽章旁边的全队信息：图标和数字上下对齐 */
+.formation-box .tIf-total-hp, .formation-box .tIf-effect > div { align-items: center; }
+.tIf-total-hp .general, .tIf-total-hp .reduce, .tIf-total-hp .reduce .reduce-scale, .tIf-total-hp .reduce .general,
+.tIf-total-skill-boost .general, .tIf-total-move .general, .tIf-total-move .awoken-bind {
+	display: inline-flex; align-items: center; white-space: nowrap;
+}
+.tIf-total-hp .reduce.no-reduce .general { display: none; }
+.tIf-total-hp :where(.general, .reduce-scale)::before, .tIf-total-skill-boost .general::before, .tIf-total-move :where(.general, .awoken-bind)::before {
+	vertical-align: middle; flex: none; margin-right: 1px;
+}
+.tIf-total-hp sub, .tIf-effect sub { vertical-align: baseline; font-size: 0.75em; position: relative; top: 0.25em; }
+.tIf-total-hp .mypdc-avgcap-total { display: inline-flex; align-items: center; }
+/* 没有潜觉的队员：显示一个空的潜觉格 */
+.team-latents .latents.mypdc-has-mon:has(> .latent-ul.display-none)::before {
+	content: "潜觉"; display: flex; align-items: center; justify-content: center;
+	height: 26px; margin: 2px 4px; border: 2px dashed rgba(120, 120, 120, 0.6); border-radius: 6px;
+	color: rgba(120, 120, 120, 0.9); font-size: 12px; cursor: pointer;
+}

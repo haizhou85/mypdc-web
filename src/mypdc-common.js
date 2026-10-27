@@ -141,7 +141,7 @@ const MyPDC = (function () {
 			// 用窄于 1310px 的虚拟窗口渲染，宽屏两栏布局的媒体查询不生效，直接得到上游的竖向布局
 			const options = {
 				windowWidth: 1000,
-				onclone: doc => { doc.body.classList.remove('side-mode'); doc.querySelectorAll('.mypdc-open-inline').forEach(b => b.remove()); },
+				onclone: doc => { doc.body.classList.remove('side-mode'); doc.querySelectorAll('.mypdc-open-inline').forEach(b => b.remove()); doc.querySelectorAll('.mypdc-has-mon').forEach(x => x.classList.remove('mypdc-has-mon')); },
 			};
 			if (transparent) options.backgroundColor = null;
 			html2canvas(target, options).then(canvas => {
@@ -419,4 +419,18 @@ const MyPDC = (function () {
 		if (footer) footer.before(box); else document.body.append(box);
 		render();
 	});
+})();
+
+// 队员没有潜觉时也显示一个空格，点一下打开潜觉编辑
+(function () {
+	function mark(ti) {
+		const big = typeof teamBigBoxs !== 'undefined' ? teamBigBoxs[ti] : null;
+		const team = formation?.teams?.[ti];
+		if (!big || !team) return;
+		big.querySelectorAll('.team-latents .latents').forEach(li => {
+			const i = parseInt(li.dataset.index, 10);
+			li.classList.toggle('mypdc-has-mon', team[0]?.[i]?.id > 0);
+		});
+	}
+	MyPDC.onTeamUpdate(ti => { if (ti >= 0) mark(ti); else (formation?.teams || []).forEach((_, i) => mark(i)); });
 })();
