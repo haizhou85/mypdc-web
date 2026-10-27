@@ -693,3 +693,10 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 	height: 26px; margin: 2px 4px; border: 2px dashed rgba(120, 120, 120, 0.6); border-radius: 6px;
 	color: rgba(120, 120, 120, 0.9); font-size: 12px; cursor: pointer;
 }
+/* 徽章：放大一些，和右边两行信息上下居中 */
+.formation-box .team-total-info { align-items: center; column-gap: 4px; }
+.formation-box .team-total-info .team-badge {
+	align-self: center;
+	transform: scale(0.62);
+	margin: calc(var(--badge-height) * -0.19) calc(var(--badge-width) * -0.19);
+}
