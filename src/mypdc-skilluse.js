@@ -437,3 +437,54 @@
 	}, 500);
 	MyPDC.avgCap = { teamCaps, skillCaps, update };
 })();
+
+// 队员稀有度和 CD：能力值下方一行，例如“8★ CD5”；多阶段技能取最小 CD
+(function () {
+	const { el, load, save, teamStats } = MyPDC;
+	const KEY = 'show-rarecd';
+	function minCd(card, member) {
+		const sk = Skills[card?.activeSkillId];
+		if (!sk) return null;
+		const cdOf = (s, lv) => Math.max(1, s.initialCooldown - ((lv ?? s.maxLevel) - 1));
+		if ((sk.type === 232 || sk.type === 233) && Array.isArray(sk.params)) {
+			const cds = sk.params.map(id => Skills[id]).filter(Boolean).map(s => cdOf(s));
+			if (cds.length) return Math.min(...cds);
+		}
+		return cdOf(sk, member?.skilllevel);
+	}
+	function update(ti) {
+		const big = typeof teamBigBoxs !== 'undefined' ? teamBigBoxs[ti] : null;
+		const team = formation?.teams?.[ti];
+		if (!big || !team || typeof Skills === 'undefined' || Skills.length < 1000) return;
+		team[0].forEach((m, i) => {
+			const li = big.querySelector(`.team-ability .abilitys[data-index="${i}"]`);
+			if (!li) return;
+			let d = li.querySelector('.mypdc-rarecd');
+			if (!d) { d = el('div', { class: 'mypdc-rarecd' }); li.querySelector('.mypdc-avgcap') ? li.querySelector('.mypdc-avgcap').before(d) : li.append(d); }
+			const card = m?.id > 0 ? Cards[m.id] : null;
+			d.innerHTML = '';
+			if (!card) return;
+			const cd = minCd(card, m);
+			d.append(el('span', { class: 'r' }, `${card.rarity}★`), cd ? `CD${cd}` : '');
+		});
+	}
+	function buildSwitch() {
+		const list = document.querySelector('.config-display-list .in-team');
+		if (!list || document.getElementById('mypdc-show-rarecd')) return;
+		const on = load(KEY, true);
+		document.body.classList.toggle('mypdc-show-rarecd', on);
+		const ipt = el('input', { type: 'checkbox', class: 'switch-ipt', id: 'mypdc-show-rarecd', checked: on, onchange: e => {
+			save(KEY, e.target.checked); document.body.classList.toggle('mypdc-show-rarecd', e.target.checked);
+		} });
+		list.append(ipt, el('label', { for: 'mypdc-show-rarecd' }, '队员稀有度和CD'));
+	}
+	window.addEventListener('load', () => {
+		buildSwitch();
+		// 头像固定显示：编号、加蛋、觉醒数
+		document.body.classList.add('show-card-id', 'show-member-plus-point', 'show-member-awoken-count');
+	});
+	MyPDC.onTeamUpdate(ti => { if (ti >= 0) update(ti); });
+	const t = setInterval(() => {
+		if (typeof Skills !== 'undefined' && Skills.length > 1000) { clearInterval(t); teamStats.forEach((s, i) => s && update(i)); }
+	}, 500);
+})();

@@ -704,8 +704,7 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .tIf-total-hp .reduce-details { display: none !important; }
 
 /* 队伍头像：只显示加蛋（左上）、超觉醒（右上）、编号（下方） */
-.formation-box .monster :is(.awoken-count-num, .level, .rarity, .skill-cd, .count-in-box) { display: none !important; }
-.formation-box .monster .super-awoken { top: -2px; }
+.formation-box .monster :is(.level, .rarity, .skill-cd, .count-in-box) { display: none !important; }
 .formation-box .monster .id { left: 0; right: 0; bottom: 2px; text-align: center; }
 /* 搜索结果的头像：什么都不加 */
 :is(.mypdc-list-icon, .edit-box .search-mon-list) .monster > :not(.attrs) { display: none !important; }
@@ -714,3 +713,10 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .edit-box .search-mon-list .monster > .id {
 	display: block !important; position: absolute; left: 0; right: 0; bottom: 2px; text-align: center;
 }
+
+/* 展示信息开关列表：头像显示相关的设置不需要（固定显示加蛋、觉醒数、超觉醒、编号） */
+.config-display-list .in-card { display: none !important; }
+/* 队员稀有度和 CD（能力值下方一行） */
+.abilitys .mypdc-rarecd { white-space: nowrap; font-weight: bold; color: #555; }
+.abilitys .mypdc-rarecd .r { color: #e6a700; margin-right: 6px; }
+body:not(.mypdc-show-rarecd) .abilitys .mypdc-rarecd { display: none; }
