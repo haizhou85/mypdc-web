@@ -424,9 +424,9 @@
 
 	function build() {
 		if (!API) return;
-		const openBtn = el('button', { type: 'button', class: 'mypdc-open-btn', onclick: open }, '🛡 关卡伤害');
+		const openBtn = el('button', { type: 'button', class: 'mypdc-open-btn', onclick: open }, '关卡伤害模拟');
 		panel = el('div', { class: 'mypdc-panel mypdc-dg-panel display-none' },
-			el('div', { class: 'mypdc-panel-head' }, el('h2', null, '🛡 关卡伤害'), el('button', { type: 'button', onclick: close }, '关闭')));
+			el('div', { class: 'mypdc-panel-head' }, el('h2', null, '关卡伤害模拟'), el('button', { type: 'button', onclick: close }, '关闭')));
 		body = el('div', { class: 'mypdc-panel-body' });
 		panel.append(body);
 		document.body.append(panel);
