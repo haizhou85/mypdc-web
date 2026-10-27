@@ -46,14 +46,26 @@
 		const last = members.length - 1;
 		const seen = new Set();
 		members.forEach((m, i) => {
-			[[m, ''], [assists?.[i], '辅助']].forEach(([mem, tag]) => {
-				const card = mem?.id > 0 ? Cards[mem.id] : null;
-				if (!card?.activeSkillId) return;
+			// 本体、辅助，以及变身宠物变身前各形态的技能（例如变身时让右边变属性）
+			const sources = [];
+			const addSrc = (id, tag, pre) => { const c = id > 0 ? Cards[id] : null; if (c?.activeSkillId) sources.push([c, tag, pre]); };
+			addSrc(m?.id, '', false);
+			const seenForm = new Set([m?.id]);
+			let froms = [...(Cards[m?.id]?.henshinFrom || [])];
+			while (froms.length && seenForm.size < 8) {
+				const id = froms.shift();
+				if (seenForm.has(id)) continue;
+				seenForm.add(id);
+				addSrc(id, '', true);
+				froms.push(...(Cards[id]?.henshinFrom || []));
+			}
+			addSrc(assists?.[i]?.id, '辅助', false);
+			sources.forEach(([card, tag, pre]) => {
 				timedEffects(card.activeSkillId).forEach((e, k) => {
 					const key = `${i}-${tag ? 'a' : 'm'}-${card.id}-${k}`;
 					if (seen.has(key)) return;
 					seen.add(key);
-					const who = `${i + 1}号${tag ? '辅助' : ''} ${cardName(card.id)}${e.stage ? `（第${e.stage}段）` : ''}`;
+					const who = `${i + 1}号${tag ? '辅助' : ''} ${cardName(card.id)}${pre ? '（变身前）' : ''}${e.stage ? `（第${e.stage}段）` : ''}`;
 					if (e.type === 'shield') {
 						const s = shieldInfo(e.node);
 						if (!(s.pct > 0)) return;
