@@ -22,8 +22,8 @@ printf 'window.MYPDC_API = %s;\n' "$(python3 -I -c 'import json,os; print(json.d
 # 每个文件带上内容哈希（?v=...），网站更新后浏览器一定会取新版本，不会出现新脚本配旧样式
 ver() { sha1sum "$OUT/$1" | cut -c1-10; }
 INJECT=""
-for f in mypdc.css mypdc-mobile.css; do INJECT+="<link href=\"$f?v=$(ver $f)\" rel=\"stylesheet\" type=\"text/css\">\\n"; done
-for f in mypdc-config.js mypdc-common.js mypdc-impart.js mypdc-detail.js mypdc-sort.js mypdc-list.js mypdc-skilluse.js mypdc-dungeon.js mypdc-teams.js; do
+for f in mypdc.css mypdc-mobile.css mypdc-desktop.css; do INJECT+="<link href=\"$f?v=$(ver $f)\" rel=\"stylesheet\" type=\"text/css\">\\n"; done
+for f in mypdc-config.js mypdc-common.js mypdc-impart.js mypdc-detail.js mypdc-sort.js mypdc-list.js mypdc-skilluse.js mypdc-dungeon.js mypdc-teams.js mypdc-desktop.js; do
 	INJECT+="<script type=\"text/javascript\" src=\"$f?v=$(ver $f)\"></script>\\n"
 done
 for page in solo.html multi.html triple.html; do

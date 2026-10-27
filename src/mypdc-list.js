@@ -541,9 +541,11 @@
 	];
 	// 手机上显示的列（名称、觉醒放到每只宠物的第二行）
 	const COMPACT_KEYS = ['icon', 'id', 'hp', 'atk', 'rcv', 'cd'];
-	const isCompact = () => window.innerWidth <= 700;
+	// 手机，或电脑布局下结果栏比较窄时，用两行的紧凑列表
+	const isCompact = () => window.innerWidth <= 700 ||
+		(!!document.body?.classList.contains('mypdc-desk') && (document.querySelector('.mypdc-desk-results')?.clientWidth || 0) < 900);
 	let lastCompact = isCompact();
-	window.addEventListener('resize', () => { if (isCompact() !== lastCompact) { lastCompact = isCompact(); render(); } });
+	window.addEventListener('resize', () => setTimeout(() => { if (isCompact() !== lastCompact) { lastCompact = isCompact(); render(); } }, 300));
 
 	function selectCard(id) {
 		const input = document.getElementById('card-id');

@@ -1,0 +1,137 @@
+@charset "utf-8";
+/* 我的 PDC：电脑宽屏布局（≥1200px，body.mypdc-desk）。
+   顶部深色工具栏；左栏 = 队伍 + 正在编辑的队员；右栏 = 搜索条件和结果（一直展开，独立滚动）。 */
+body.mypdc-desk {
+	--desk-bg: #f1ede6;
+	--desk-card: #ffffff;
+	--desk-dark: #33261d;
+	--desk-dark2: #463427;
+	--desk-radius: 16px;
+	--desk-shadow: 0 6px 24px rgba(40, 25, 10, 0.10);
+	--desk-accent: #e0457b;
+	display: grid !important;
+	grid-template-columns: minmax(680px, 700px) minmax(440px, 1fr);
+	grid-auto-rows: min-content;
+	column-gap: 20px;
+	align-items: start;
+	margin: 0;
+	padding: 0 16px 24px;
+	min-height: 100vh;
+	background: var(--desk-bg) !important;
+	font-family: system-ui, -apple-system, "PingFang SC", "Microsoft Yahei", sans-serif;
+}
+body.mypdc-desk > * { grid-column: 1 / -1; }
+
+/* ---------- 顶部工具栏 ---------- */
+body.mypdc-desk > .control-box {
+	position: sticky; top: 0; z-index: 60;
+	display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px;
+	margin: 0 -20px; padding: 10px 24px;
+	background: var(--desk-dark); color: #f4ece4;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+body.mypdc-desk > .control-box::before {
+	content: "LaLa PAD"; font-weight: 800; font-size: 18px; letter-spacing: 0.5px; margin-right: 6px;
+	background: linear-gradient(90deg, #ffb74d, #ff6f91); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+body.mypdc-desk > .control-box > * { margin: 0 !important; }
+body.mypdc-desk > .control-box > div { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px; }
+body.mypdc-desk .control-box button, body.mypdc-desk .control-box select {
+	background: rgba(255, 255, 255, 0.10) !important; color: #f4ece4 !important;
+	border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 9px !important;
+	padding: 4px 10px !important; min-height: 30px !important; font-size: 13px !important; cursor: pointer;
+}
+body.mypdc-desk .control-box button:hover { background: rgba(255, 255, 255, 0.2) !important; }
+body.mypdc-desk .control-box select option { color: #222; }
+body.mypdc-desk .control-box label, body.mypdc-desk .control-box summary { color: #f4ece4; font-size: 13px; }
+body.mypdc-desk .control-box details.config-display-list {
+	flex-basis: 100%; order: 10;
+}
+body.mypdc-desk .control-box details.config-display-list:not([open]) { flex-basis: auto; order: 0; }
+body.mypdc-desk .control-box details.config-display-list[open] {
+	background: rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 8px 12px;
+}
+body.mypdc-desk .control-box #btn-remove-assist.mypdc-on { background: #c62828 !important; }
+body.mypdc-desk .mypdc-credit { color: #998; }
+
+/* ---------- 左栏：队伍 ---------- */
+body.mypdc-desk > .mypdc-team-banner { grid-column: 1; margin-top: 16px; }
+body.mypdc-desk > .formation-box {
+	grid-column: 1;
+	width: auto !important; min-width: 0 !important;
+	margin-top: 16px; padding: 16px;
+	background: var(--desk-card); border-radius: var(--desk-radius); box-shadow: var(--desk-shadow);
+}
+body.mypdc-desk .formation-box .title-box { margin-bottom: 6px; }
+body.mypdc-desk .formation-box .team-bigbox { border-radius: 12px; }
+body.mypdc-desk .team-latents .latents, body.mypdc-desk .team-member-awoken .member-awoken,
+body.mypdc-desk .team-assist-awoken .member-awoken { cursor: pointer; border-radius: 8px; }
+body.mypdc-desk .team-latents .latents:hover, body.mypdc-desk .team-member-awoken .member-awoken:hover,
+body.mypdc-desk .team-assist-awoken .member-awoken:hover { background: rgba(224, 69, 123, 0.08); }
+body.mypdc-desk .formation-box .monster { transition: transform 0.12s; }
+body.mypdc-desk .formation-box .team-members .monster:hover { transform: translateY(-2px); }
+
+/* 没在编辑时的提示 */
+.mypdc-desk-empty { display: none; }
+body.mypdc-desk > .mypdc-desk-empty {
+	grid-column: 1; display: block; margin-top: 16px; padding: 18px 20px;
+	border: 2px dashed #cdbfae; border-radius: var(--desk-radius); color: #8a7765; text-align: center; font-size: 14px;
+}
+body.mypdc-desk:has(.edit-box:not(.display-none)) > .mypdc-desk-empty { display: none; }
+
+/* ---------- 编辑框拆开：标题、ID、详情、按钮放左栏；搜索放右栏 ---------- */
+body.mypdc-desk .edit-box, body.mypdc-desk .edit-box.display-none {
+	display: contents !important;
+}
+body.mypdc-desk .edit-box.display-none > :not(.search-box) { display: none !important; }
+body.mypdc-desk .edit-box > :not(.search-box):not(template) {
+	grid-column: 1; color: #fff;
+	background: linear-gradient(180deg, var(--desk-dark2), var(--desk-dark));
+	padding-left: 12px; padding-right: 12px;
+}
+body.mypdc-desk .edit-box > .edit-box-title {
+	margin-top: 16px; padding-top: 8px; padding-bottom: 6px;
+	border-radius: var(--desk-radius) var(--desk-radius) 0 0;
+	font-size: 22px; scroll-margin-top: calc(var(--mypdc-head, 60px) + 12px);
+}
+body.mypdc-desk .edit-box > .edit-box-title .mask-close { left: 12px; top: 8px; }
+body.mypdc-desk .edit-box > .edit-box-title .mypdc-clear-all { right: 12px; top: 8px; }
+body.mypdc-desk .edit-box > .button-box {
+	border-radius: 0 0 var(--desk-radius) var(--desk-radius); padding-top: 8px; padding-bottom: 12px;
+	position: sticky; bottom: 0; z-index: 5; box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.25);
+}
+body.mypdc-desk .edit-box .setting-box { padding-bottom: 8px; }
+body.mypdc-desk .edit-box .setting-box .monsterinfo-box,
+body.mypdc-desk .edit-box .setting-box .row-mon-latent { scroll-margin-top: calc(var(--mypdc-head, 60px) + 12px); }
+
+/* 右栏：搜索（一直展开，独立滚动） */
+body.mypdc-desk .edit-box > .search-box {
+	grid-column: 2; grid-row: 2 / 200;
+	position: sticky; top: calc(var(--mypdc-head, 60px) + 16px);
+	max-height: calc(100vh - var(--mypdc-head, 60px) - 32px);
+	overflow: auto; overscroll-behavior: contain;
+	margin-top: 16px; padding: 12px 14px 16px;
+	background: linear-gradient(180deg, var(--desk-dark2), var(--desk-dark)); color: #fff;
+	border-radius: var(--desk-radius); box-shadow: var(--desk-shadow);
+	scrollbar-width: thin;
+}
+body.mypdc-desk .edit-box > .search-box > summary {
+	pointer-events: none; list-style: none; margin: -12px -14px 8px; padding: 10px 14px;
+	position: sticky; top: -12px; z-index: 4;
+	background: var(--desk-dark2); border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+body.mypdc-desk .edit-box > .search-box > summary::-webkit-details-marker { display: none; }
+body.mypdc-desk .mypdc-desk-results { margin-top: 10px; }
+body.mypdc-desk .mypdc-desk-results .mypdc-list-wrap { height: auto !important; max-height: none; resize: none; border-radius: 12px; overflow: visible; }
+body.mypdc-desk .mypdc-list-table th { top: 32px; }
+body.mypdc-desk .mypdc-skill-filter, body.mypdc-desk .mypdc-sort-cfg {
+	border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; background: rgba(255, 255, 255, 0.03);
+}
+body.mypdc-desk .mypdc-result-fab { display: none !important; }
+
+/* 底部 */
+body.mypdc-desk > .mypdc-footer, body.mypdc-desk > .mypdc-install { grid-column: 1 / -1; }
+/* 队伍保持单栏（上游宽屏会把觉醒效果挤到右边） */
+body.mypdc-desk .formation-box .team-bigbox { display: block !important; column-count: auto !important; }
+body.mypdc-desk .formation-box .team-bigbox > * { grid-column: auto !important; grid-row: auto !important; }
+body.mypdc-desk .formation-box .team-awoken, body.mypdc-desk .formation-box .team-awoken-effect { display: block !important; width: auto !important; }

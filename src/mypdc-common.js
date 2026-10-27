@@ -259,7 +259,7 @@ const MyPDC = (function () {
 		try {
 			const mon = formation.teams[teamNum]?.[isAssist]?.[indexInTeam];
 			// 宽屏左右分栏（side-mode 且宽于 1310px）时编辑框在侧边，不用滚动
-			const sideBySide = document.body.classList.contains('side-mode') && window.innerWidth > 1310;
+			const sideBySide = document.body.classList.contains('side-mode') && window.innerWidth > 1310 && !document.body.classList.contains('mypdc-desk');
 			if (mon?.id > 0 && !sideBySide) {
 				// 搜索结果列表随后才渲染，上面的高度会变：分几次对齐；用户自己动手滚动后就不再动
 				let userMoved = false;
@@ -271,7 +271,8 @@ const MyPDC = (function () {
 					// 点潜觉时滚到潜觉那一行，其他情况滚到宠物信息卡片
 					const card = document.querySelector(target === 'latent' ? '.edit-box .setting-box .row-mon-latent' : '.edit-box .monsterinfo-box');
 					if (!card?.offsetParent) return true;
-					window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - 4, behavior: 'instant' });
+					const head = document.body.classList.contains('mypdc-desk') ? (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mypdc-head')) || 0) + 8 : 4;
+					window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - head, behavior: 'instant' });
 					return true;
 				};
 				let i = 0;
