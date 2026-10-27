@@ -135,16 +135,19 @@ body.mypdc-desk .formation-box .team-bigbox { display: block !important; column-
 body.mypdc-desk .formation-box .team-bigbox > * { grid-column: auto !important; grid-row: auto !important; }
 body.mypdc-desk .formation-box .team-awoken, body.mypdc-desk .formation-box .team-awoken-effect { display: block !important; width: auto !important; }
 
-/* 860~1199px（折叠屏展开横屏、小平板横屏）：左栏队伍缩小，右栏的宠物信息也缩小 */
+/* 860~1199px（折叠屏展开横屏、小平板横屏）：左栏队伍按比例缩小（脚本用 transform 缩放，避免 Safari 字体被放大） */
 @media (max-width: 1199px) {
-	body.mypdc-desk { grid-template-columns: 420px minmax(360px, 1fr); column-gap: 10px; padding: 0 8px 20px; }
+	body.mypdc-desk { grid-template-columns: minmax(400px, 1fr) minmax(360px, 700px); column-gap: 10px; padding: 0 8px 20px; }
 	body.mypdc-desk > .control-box { margin: 0 -8px; padding: 8px 12px; gap: 6px 10px; }
 	body.mypdc-desk > .control-box::before { font-size: 15px; }
-	body.mypdc-desk > .formation-box { zoom: 0.6; padding: 12px;
-		top: calc((var(--mypdc-head, 60px) + 16px) / 0.6); max-height: calc((100vh - var(--mypdc-head, 60px) - 32px) / 0.6); }
-	body.mypdc-desk > .mypdc-team-banner { zoom: 0.8; }
-	body.mypdc-desk .edit-box > :not(.search-box):not(template) { zoom: 0.72; }
+	body.mypdc-desk > .formation-box { padding: 10px; }
 	body.mypdc-desk .edit-box > .search-box #search-attr { zoom: 0.72; }
+}
+/* 右栏比宠物信息的原始宽度（664）窄时才缩小宠物信息 */
+@media (max-width: 1099px) {
+	body.mypdc-desk .edit-box > :not(.search-box):not(template) { zoom: 0.72; }
+}
+.mypdc-scale-inner { transform-origin: top left; }
 }
 body.mypdc-desk, html:has(body.mypdc-desk) { overflow-x: clip; }
 /* 拖动搜索结果到队伍 */

@@ -702,3 +702,11 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 }
 /* 不显示减伤详情的五色长条 */
 .tIf-total-hp .reduce-details { display: none !important; }
+
+/* 队伍头像：只显示加蛋（左上）、超觉醒（右上）、编号（下方） */
+.formation-box .monster :is(.awoken-count-num, .level, .rarity, .skill-cd, .count-in-box) { display: none !important; }
+.formation-box .monster .super-awoken { top: -2px; }
+.formation-box .monster .id { left: 0; right: 0; bottom: 2px; text-align: center; }
+/* 搜索结果的头像：什么都不加 */
+:is(.mypdc-list-icon, .edit-box .search-mon-list) .monster > :not(.attrs) { display: none !important; }
+:is(.mypdc-list-icon, .edit-box .search-mon-list) .mypdc-sortval { display: none !important; }

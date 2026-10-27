@@ -194,3 +194,45 @@
 		setTimeout(() => n.remove(), 2200);
 	}
 })();
+
+// 左栏队伍：栏宽不够原始宽度时，用 transform 等比缩小（不用 CSS zoom：iPad Safari 在 zoom 里会把小字放大，导致文字重叠）
+(function () {
+	let inner = null, ro = null;
+	function wrap(fb) {
+		inner = MyPDC.el('div', { class: 'mypdc-scale-inner' });
+		while (fb.firstChild) inner.append(fb.firstChild);
+		fb.append(inner);
+	}
+	function unwrap(fb) {
+		if (!inner) return;
+		while (inner.firstChild) fb.insertBefore(inner.firstChild, inner);
+		inner.remove(); inner = null;
+		fb.style.height = '';
+	}
+	function fit() {
+		const fb = document.querySelector('.formation-box');
+		if (!fb) return;
+		if (!document.body.classList.contains('mypdc-desk')) { unwrap(fb); return; }
+		if (!inner) wrap(fb);
+		inner.style.transform = ''; inner.style.width = '';
+		const cs = getComputedStyle(fb);
+		const avail = fb.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+		const natural = Math.max(inner.scrollWidth, 648);
+		const s = Math.min(1, avail / natural);
+		if (s < 1) {
+			inner.style.width = natural + 'px';
+			inner.style.transform = `scale(${s.toFixed(4)})`;
+			inner.style.marginBottom = `${-(inner.offsetHeight * (1 - s)).toFixed(1)}px`;
+		} else inner.style.marginBottom = '';
+	}
+	let pending = false;
+	const schedule = () => { if (pending) return; pending = true; requestAnimationFrame(() => { pending = false; fit(); }); };
+	window.addEventListener('load', () => setTimeout(() => {
+		fit();
+		ro = new ResizeObserver(schedule);
+		const fb = document.querySelector('.formation-box');
+		if (fb) { ro.observe(fb); new MutationObserver(schedule).observe(fb, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }); }
+		new MutationObserver(schedule).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+	}, 600));
+	window.addEventListener('resize', schedule);
+})();
