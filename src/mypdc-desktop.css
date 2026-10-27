@@ -71,63 +71,62 @@ body.mypdc-desk .team-assist-awoken .member-awoken:hover { background: rgba(224,
 body.mypdc-desk .formation-box .monster { transition: transform 0.12s; }
 body.mypdc-desk .formation-box .team-members .monster:hover { transform: translateY(-2px); }
 
-/* 没在编辑时的提示 */
-.mypdc-desk-empty { display: none; }
-body.mypdc-desk > .mypdc-desk-empty {
-	grid-column: 1; display: block; margin-top: 16px; padding: 18px 20px;
-	border: 2px dashed #cdbfae; border-radius: var(--desk-radius); color: #8a7765; text-align: center; font-size: 14px;
-}
-body.mypdc-desk:has(.edit-box:not(.display-none)) > .mypdc-desk-empty { display: none; }
 
-/* ---------- 编辑框拆开：标题、ID、详情、按钮放左栏；搜索放右栏 ---------- */
+/* ---------- 左栏：队伍固定在屏幕上（太高时自己滚动） ---------- */
+body.mypdc-desk > .formation-box {
+	position: sticky; top: calc(var(--mypdc-head, 60px) + 16px);
+	max-height: calc(100vh - var(--mypdc-head, 60px) - 32px);
+	overflow: auto; overscroll-behavior: contain; scrollbar-width: thin;
+	grid-row: 2 / 200;
+}
+
+/* ---------- 右栏：搜索条件 → 结果列表（8 条） → 宠物信息 → 按钮 ---------- */
 body.mypdc-desk .edit-box, body.mypdc-desk .edit-box.display-none {
 	display: contents !important;
 }
 body.mypdc-desk .edit-box.display-none > :not(.search-box) { display: none !important; }
-body.mypdc-desk .edit-box > :not(.search-box):not(template) {
-	grid-column: 1; color: #fff;
+body.mypdc-desk .edit-box > :not(template) {
+	grid-column: 2; color: #fff;
 	background: linear-gradient(180deg, var(--desk-dark2), var(--desk-dark));
-	padding-left: 12px; padding-right: 12px;
+	padding-left: 14px; padding-right: 14px;
 }
 body.mypdc-desk .edit-box > .edit-box-title {
 	margin-top: 16px; padding-top: 8px; padding-bottom: 6px;
-	border-radius: var(--desk-radius) var(--desk-radius) 0 0;
-	font-size: 22px; scroll-margin-top: calc(var(--mypdc-head, 60px) + 12px);
+	border-radius: var(--desk-radius) var(--desk-radius) 0 0; font-size: 22px;
 }
 body.mypdc-desk .edit-box > .edit-box-title .mask-close { left: 12px; top: 8px; }
 body.mypdc-desk .edit-box > .edit-box-title .mypdc-clear-all { right: 12px; top: 8px; }
+body.mypdc-desk .edit-box.display-none > .search-box { margin-top: 16px; border-radius: var(--desk-radius); padding-top: 12px; padding-bottom: 14px; }
+body.mypdc-desk .edit-box > .search-box { padding-bottom: 10px; }
+body.mypdc-desk .edit-box > .search-box > summary { pointer-events: none; list-style: none; padding: 4px 0 8px; }
+body.mypdc-desk .edit-box > .search-box > summary::-webkit-details-marker { display: none; }
+body.mypdc-desk .edit-box > .sticky-box { border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 8px; }
 body.mypdc-desk .edit-box > .button-box {
 	border-radius: 0 0 var(--desk-radius) var(--desk-radius); padding-top: 8px; padding-bottom: 12px;
 	position: sticky; bottom: 0; z-index: 5; box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.25);
 }
 body.mypdc-desk .edit-box .setting-box { padding-bottom: 8px; }
+body.mypdc-desk .edit-box .sticky-box,
 body.mypdc-desk .edit-box .setting-box .monsterinfo-box,
 body.mypdc-desk .edit-box .setting-box .row-mon-latent { scroll-margin-top: calc(var(--mypdc-head, 60px) + 12px); }
-
-/* 右栏：搜索（一直展开，独立滚动） */
-body.mypdc-desk .edit-box > .search-box {
-	grid-column: 2; grid-row: 2 / 200;
-	position: sticky; top: calc(var(--mypdc-head, 60px) + 16px);
-	max-height: calc(100vh - var(--mypdc-head, 60px) - 32px);
-	overflow: auto; overscroll-behavior: contain;
-	margin-top: 16px; padding: 12px 14px 16px;
-	background: linear-gradient(180deg, var(--desk-dark2), var(--desk-dark)); color: #fff;
-	border-radius: var(--desk-radius); box-shadow: var(--desk-shadow);
-	scrollbar-width: thin;
-}
-body.mypdc-desk .edit-box > .search-box > summary {
-	pointer-events: none; list-style: none; margin: -12px -14px 8px; padding: 10px 14px;
-	position: sticky; top: -12px; z-index: 4;
-	background: var(--desk-dark2); border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-body.mypdc-desk .edit-box > .search-box > summary::-webkit-details-marker { display: none; }
 body.mypdc-desk .mypdc-desk-results { margin-top: 10px; }
-body.mypdc-desk .mypdc-desk-results .mypdc-list-wrap { height: auto !important; max-height: none; resize: none; border-radius: 12px; overflow: visible; }
-body.mypdc-desk .mypdc-list-table th { top: 32px; }
+/* 结果列表：只显示约 8 条的高度，其余在框里滚动（高度由脚本按实际行高设定） */
+body.mypdc-desk .mypdc-desk-results .mypdc-list-wrap {
+	height: auto !important; max-height: 470px; resize: vertical; border-radius: 12px; overflow: auto; overscroll-behavior: contain;
+}
+body.mypdc-desk .mypdc-desk-results .search-mon-list { max-height: 470px; overflow: auto; }
 body.mypdc-desk .mypdc-skill-filter, body.mypdc-desk .mypdc-sort-cfg {
 	border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; background: rgba(255, 255, 255, 0.03);
 }
 body.mypdc-desk .mypdc-result-fab { display: none !important; }
+
+/* 没在编辑时的提示（右栏） */
+.mypdc-desk-empty { display: none; }
+body.mypdc-desk > .mypdc-desk-empty {
+	grid-column: 2; display: block; margin-top: 12px; padding: 16px 20px;
+	border: 2px dashed #cdbfae; border-radius: var(--desk-radius); color: #8a7765; text-align: center; font-size: 14px;
+}
+body.mypdc-desk:has(.edit-box:not(.display-none)) > .mypdc-desk-empty { display: none; }
 
 /* 底部 */
 body.mypdc-desk > .mypdc-footer, body.mypdc-desk > .mypdc-install { grid-column: 1 / -1; }
@@ -136,18 +135,15 @@ body.mypdc-desk .formation-box .team-bigbox { display: block !important; column-
 body.mypdc-desk .formation-box .team-bigbox > * { grid-column: auto !important; grid-row: auto !important; }
 body.mypdc-desk .formation-box .team-awoken, body.mypdc-desk .formation-box .team-awoken-effect { display: block !important; width: auto !important; }
 
-/* 900~1199px（折叠屏展开横屏、小平板横屏）：左栏整体缩小，右栏用紧凑列表 */
+/* 860~1199px（折叠屏展开横屏、小平板横屏）：左栏队伍缩小，右栏的宠物信息也缩小 */
 @media (max-width: 1199px) {
-	body.mypdc-desk { grid-template-columns: 530px minmax(300px, 1fr); column-gap: 8px; padding: 0 8px 20px; }
-	body.mypdc-desk > .control-box { margin: 0 -10px; padding: 8px 12px; gap: 6px 10px; }
+	body.mypdc-desk { grid-template-columns: 420px minmax(360px, 1fr); column-gap: 10px; padding: 0 8px 20px; }
+	body.mypdc-desk > .control-box { margin: 0 -8px; padding: 8px 12px; gap: 6px 10px; }
 	body.mypdc-desk > .control-box::before { font-size: 15px; }
-	body.mypdc-desk > .formation-box,
-	body.mypdc-desk > .mypdc-team-banner,
-	body.mypdc-desk > .mypdc-desk-empty,
-	body.mypdc-desk .edit-box > :not(.search-box):not(template) { zoom: 0.78; }
-	body.mypdc-desk > .formation-box { padding: 12px; }
-	body.mypdc-desk .edit-box > .search-box { padding: 10px; }
+	body.mypdc-desk > .formation-box { zoom: 0.6; padding: 12px;
+		top: calc((var(--mypdc-head, 60px) + 16px) / 0.6); max-height: calc((100vh - var(--mypdc-head, 60px) - 32px) / 0.6); }
+	body.mypdc-desk > .mypdc-team-banner { zoom: 0.8; }
+	body.mypdc-desk .edit-box > :not(.search-box):not(template) { zoom: 0.72; }
 	body.mypdc-desk .edit-box > .search-box #search-attr { zoom: 0.72; }
 }
-body.mypdc-desk { overflow-x: hidden; }
-html:has(body.mypdc-desk) { overflow-x: hidden; }
+body.mypdc-desk, html:has(body.mypdc-desk) { overflow-x: clip; }

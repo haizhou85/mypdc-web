@@ -1,6 +1,6 @@
 'use strict';
-// 我的 PDC：电脑宽屏布局（≥1200px）。手机和窄窗口保持原样。
-// 左栏：队伍 + 正在编辑的队员详情；右栏：搜索条件和结果列表一直展开（独立滚动）。
+// 我的 PDC：电脑 / 横屏宽屏布局（横屏且 ≥860px）。手机和竖屏保持原样。
+// 左栏：队伍（固定在屏幕上）；右栏：搜索条件 → 结果列表（8 条）→ 正在编辑的宠物信息。
 (function () {
 	const MIN = 860; // 横屏平板、折叠屏展开横屏也用电脑布局（900~1199 时左栏缩小）
 	// 只有横屏（宽大于高）才用两栏；竖屏（包括折叠屏展开竖屏、平板竖屏）一律单栏
@@ -26,7 +26,7 @@
 		}
 		if (!placeholder) {
 			placeholder = MyPDC.el('div', { class: 'mypdc-desk-empty' }, '👈 点左边队伍里的队员（头像、潜觉或觉醒），在这里编辑；右边随时可以搜索宠物。');
-			document.querySelector('.formation-box')?.after(placeholder);
+			searchBox()?.closest('.edit-box')?.after(placeholder);
 		}
 		sizeHead();
 	}
@@ -42,7 +42,24 @@
 		const h = document.querySelector('.control-box')?.getBoundingClientRect().height || 0;
 		document.documentElement.style.setProperty('--mypdc-head', Math.ceil(h) + 'px');
 	}
-	function apply() { if (isDesk()) enter(); else leave(); }
+	function apply() { if (isDesk()) enter(); else leave(); requestAnimationFrame(() => limitRows?.()); }
+
+	// 结果列表只显示 8 条的高度
+	function limitRows() {
+		const wrap = document.querySelector('.mypdc-desk-results .mypdc-list-wrap');
+		if (!wrap) return;
+		if (!document.body.classList.contains('mypdc-desk')) { wrap.style.maxHeight = ''; return; }
+		const rows = wrap.querySelectorAll('.mypdc-list-table tbody');
+		if (rows.length > 8) {
+			const top = wrap.getBoundingClientRect().top - wrap.scrollTop;
+			const h = Math.ceil(rows[7].getBoundingClientRect().bottom - top) + 2;
+			if (h > 100) wrap.style.maxHeight = h + 'px';
+		} else wrap.style.maxHeight = 'none';
+	}
+	window.addEventListener('load', () => setTimeout(() => {
+		const wrap = document.querySelector('.mypdc-list-wrap');
+		if (wrap) new MutationObserver(() => requestAnimationFrame(limitRows)).observe(wrap, { childList: true });
+	}, 400));
 
 	// 上游打开编辑框时会加 side-mode（它自己的左右分栏），电脑布局下不用
 	window.addEventListener('load', () => setTimeout(() => {
