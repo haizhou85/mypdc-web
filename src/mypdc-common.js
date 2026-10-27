@@ -252,8 +252,10 @@ const MyPDC = (function () {
 (function () {
 	if (typeof editMember !== 'function') return;
 	const orig = editMember;
+	let scrollTarget = 'card';
 	editMember = function (teamNum, isAssist, indexInTeam) { // eslint-disable-line no-global-assign
 		const out = orig.apply(this, arguments);
+		const target = scrollTarget;
 		try {
 			const mon = formation.teams[teamNum]?.[isAssist]?.[indexInTeam];
 			// 宽屏左右分栏（side-mode 且宽于 1310px）时编辑框在侧边，不用滚动
@@ -266,7 +268,8 @@ const MyPDC = (function () {
 				evs.forEach(ev => window.addEventListener(ev, stop, { once: true, passive: true }));
 				const align = () => {
 					if (userMoved) return false;
-					const card = document.querySelector('.edit-box .monsterinfo-box');
+					// 点潜觉时滚到潜觉那一行，其他情况滚到宠物信息卡片
+					const card = document.querySelector(target === 'latent' ? '.edit-box .setting-box .row-mon-latent' : '.edit-box .monsterinfo-box');
 					if (!card?.offsetParent) return true;
 					window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - 4, behavior: 'instant' });
 					return true;
@@ -286,6 +289,21 @@ const MyPDC = (function () {
 	window.addEventListener('load', () => setTimeout(() => {
 		if (typeof editBox !== 'undefined' && editBox.editMon === orig) editBox.editMon = wrapped;
 	}));
+	// 点队员头像上方的潜觉：打开这个队员的编辑，并滚到潜觉那一行
+	document.addEventListener('click', e => {
+		const li = e.target.closest?.('.team-latents .latents');
+		if (!li) return;
+		const big = li.closest('.team-bigbox');
+		const ti = typeof teamBigBoxs !== 'undefined' ? teamBigBoxs.indexOf(big) : -1;
+		const idx = parseInt(li.dataset.index, 10);
+		if (ti < 0 || !(idx >= 0) || !(formation.teams[ti]?.[0]?.[idx]?.id > 0)) return;
+		e.preventDefault(); e.stopPropagation();
+		scrollTarget = 'latent';
+		try { wrapped(ti, 0, idx); } finally { scrollTarget = 'card'; }
+		// 展开可选潜觉列表
+		const det = document.querySelector('.edit-box .setting-box .row-mon-latent details');
+		if (det) det.open = true;
+	}, true);
 })();
 
 // 顶部控制栏精简：去掉二维码、我的箱子、数据更新时间按钮；来源声明移到页面最下面；“拖拽时复制”放进“展示信息开关列表”
