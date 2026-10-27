@@ -156,6 +156,26 @@
 		return res;
 	}
 
+	// HP上限提升的最大倍数、伤害上限提升的最大值（技能里有多个时取最大）
+	const capCache = new Map();
+	function capsOf(card) {
+		if (!skillsReady() || !card.activeSkillId) return { hp: 0, cap: 0 };
+		if (capCache.has(card.id)) return capCache.get(card.id);
+		const res = { hp: 0, cap: 0 };
+		try {
+			(getActuallySkills(Skills[card.activeSkillId], [237], true) || []).forEach(sk => { res.hp = Math.max(res.hp, (sk.params?.[1] || 0) / 100); });
+		} catch (e) { /* 忽略 */ }
+		const walk = n => {
+			if (Array.isArray(n)) { n.forEach(walk); return; }
+			if (!n || typeof n !== 'object') return;
+			if (n.kind === SkillKinds.IncreaseDamageCapacity) res.cap = Math.max(res.cap, Number(n.cap) || 0);
+			for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v);
+		};
+		try { walk(skillParser(card.activeSkillId)); } catch (e) { /* 忽略 */ }
+		capCache.set(card.id, res);
+		return res;
+	}
+
 	const CUSTOM_FILTERS = {
 		'self-attr-any': cards => cards.filter(c => { const r = selfAttrOf(c); return r.random || r.attrs.size > 0; }),
 		'self-attr-random': cards => cards.filter(c => selfAttrOf(c).random),
@@ -177,7 +197,7 @@
 		return typeof node.function === 'function' ? node.function : null;
 	}
 
-	const fstate = Object.assign({ chips: [], mode: 'and', maxCd: 0, turnsKind: '', minTurns: 0, impartAw: [], impartMode: 'and', impartAny: false, shieldCount: 0, shieldCmp: 'ge' }, load('skill-filter', {}));
+	const fstate = Object.assign({ chips: [], mode: 'and', maxCd: 0, turnsKind: '', minTurns: 0, impartAw: [], impartMode: 'and', impartAny: false, shieldCount: 0, shieldCmp: 'ge', minHpMul: 0, minCap: 0 }, load('skill-filter', {}));
 
 	// ---------- 技能持续回合 ----------
 	const K = typeof SkillKinds === 'object' ? SkillKinds : {};
@@ -246,6 +266,8 @@
 		let result = cards;
 		if (fstate.maxCd > 0) result = result.filter(c => minCd(c) <= fstate.maxCd);
 		if (fstate.minTurns > 0) result = result.filter(c => maxTurns(c) >= fstate.minTurns);
+		if (fstate.minHpMul > 0) result = result.filter(c => capsOf(c).hp >= fstate.minHpMul);
+		if (fstate.minCap > 0) result = result.filter(c => capsOf(c).cap >= fstate.minCap * 1e8);
 		// 破白盾的破坏数
 		if (fstate.shieldCount > 0) {
 			const n = fstate.shieldCount, cmp = fstate.shieldCmp;
@@ -368,7 +390,7 @@
 		const chipButtons = [];
 		const refresh = () => {
 			chipButtons.forEach(b => b.classList.toggle('on', fstate.chips.includes(b.dataset.key)));
-			const n = fstate.chips.length + (fstate.maxCd > 0 ? 1 : 0) + (fstate.minTurns > 0 ? 1 : 0) + fstate.impartAw.length + (fstate.impartAny ? 1 : 0) + (fstate.shieldCount > 0 ? 1 : 0);
+			const n = fstate.chips.length + (fstate.maxCd > 0 ? 1 : 0) + (fstate.minTurns > 0 ? 1 : 0) + fstate.impartAw.length + (fstate.impartAny ? 1 : 0) + (fstate.shieldCount > 0 ? 1 : 0) + (fstate.minHpMul > 0 ? 1 : 0) + (fstate.minCap > 0 ? 1 : 0);
 			shieldCountSel.value = String(fstate.shieldCount);
 			shieldCmpSel.value = fstate.shieldCmp;
 			fillImpart();
@@ -405,6 +427,16 @@
 			el('option', { value: 'ge' }, '以上'), el('option', { value: 'le' }, '以下'), el('option', { value: 'eq' }, '仅'));
 		const shieldRow = groups.find(g => g?.firstChild?.textContent === '破白盾');
 		shieldRow?.append(shieldCountSel, shieldCmpSel);
+
+		// 数值下限：HP上限（倍）、伤害上限（亿），填了就筛选
+		const numIn = (key, attrs, parse) => el('input', Object.assign({ type: 'number', min: 0, value: fstate[key] || '', placeholder: '不限', style: 'width:4.5em',
+			onchange: e => { fstate[key] = Math.max(0, parse(e.target.value) || 0); saveF(); refresh(); runSearch(); } }, attrs));
+		const capRow = el('div', { class: 'mypdc-chip-group mypdc-cap-row' },
+			el('span', { class: 'mypdc-chip-title' }, '数值下限'),
+			el('label', null, 'HP上限 ≥ ', numIn('minHpMul', { step: 0.1 }, v => parseFloat(v)), ' 倍'),
+			el('label', null, '伤害上限 ≥ ', numIn('minCap', { step: 10 }, v => parseFloat(v)), ' 亿'));
+		const buffIdx = groups.findIndex(g => g?.firstChild?.textContent === '强化');
+		groups.splice(buffIdx >= 0 ? buffIdx + 1 : groups.length, 0, capRow);
 
 		const awName = a => {
 			try { return localTranslating.skill_parse.awokens[a]({ icon: '' }).textContent.trim(); } catch (e) { return ''; }
@@ -476,7 +508,7 @@
 		refresh();
 
 		function resetState() {
-			Object.assign(fstate, { chips: [], maxCd: 0, mode: 'and', turnsKind: '', minTurns: 0, impartAw: [], impartMode: 'and', impartAny: false, shieldCount: 0, shieldCmp: 'ge' }); saveF();
+			Object.assign(fstate, { chips: [], maxCd: 0, mode: 'and', turnsKind: '', minTurns: 0, impartAw: [], impartMode: 'and', impartAny: false, shieldCount: 0, shieldCmp: 'ge', minHpMul: 0, minCap: 0 }); saveF();
 			panel.querySelectorAll('input[type=number]').forEach(i => { i.value = ''; });
 			panel.querySelector('select').value = 'and';
 			panel.querySelector('.mypdc-turns-kind').value = '';
@@ -717,7 +749,7 @@
 		return o.attrs.every(a => !a) && !o.types.length && !o.rares.length && !o.awokens.length && !o.sawokens.length &&
 			!o.canAssist && !o.canLv110 && !o.is8Latent && !o.notWeapon &&
 			o.specialFilters.every(f => !f || f.every(n => !n)) &&
-			!fstate.chips.length && !fstate.maxCd && !fstate.minTurns && !fstate.impartAw.length && !fstate.impartAny && !fstate.shieldCount;
+			!fstate.chips.length && !fstate.maxCd && !fstate.minTurns && !fstate.impartAw.length && !fstate.impartAny && !fstate.shieldCount && !fstate.minHpMul && !fstate.minCap;
 	}
 	let searchTimer = null;
 	function autoSearch() {
