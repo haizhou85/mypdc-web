@@ -2,7 +2,7 @@
 // 我的 PDC：电脑宽屏布局（≥1200px）。手机和窄窗口保持原样。
 // 左栏：队伍 + 正在编辑的队员详情；右栏：搜索条件和结果列表一直展开（独立滚动）。
 (function () {
-	const MIN = 900; // 横屏平板、折叠屏展开横屏也用电脑布局（900~1199 时左栏缩小）
+	const MIN = 860; // 横屏平板、折叠屏展开横屏也用电脑布局（900~1199 时左栏缩小）
 	const isDesk = () => window.innerWidth >= MIN;
 	let moved = null; // 移到右栏的节点和原来的位置
 	let placeholder;

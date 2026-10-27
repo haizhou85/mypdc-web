@@ -138,7 +138,7 @@ body.mypdc-desk .formation-box .team-awoken, body.mypdc-desk .formation-box .tea
 
 /* 900~1199px（折叠屏展开横屏、小平板横屏）：左栏整体缩小，右栏用紧凑列表 */
 @media (max-width: 1199px) {
-	body.mypdc-desk { grid-template-columns: 536px minmax(320px, 1fr); column-gap: 12px; padding: 0 10px 20px; }
+	body.mypdc-desk { grid-template-columns: 530px minmax(300px, 1fr); column-gap: 8px; padding: 0 8px 20px; }
 	body.mypdc-desk > .control-box { margin: 0 -10px; padding: 8px 12px; gap: 6px 10px; }
 	body.mypdc-desk > .control-box::before { font-size: 15px; }
 	body.mypdc-desk > .formation-box,
@@ -149,3 +149,4 @@ body.mypdc-desk .formation-box .team-awoken, body.mypdc-desk .formation-box .tea
 	body.mypdc-desk .edit-box > .search-box { padding: 10px; }
 	body.mypdc-desk .edit-box > .search-box #search-attr { zoom: 0.72; }
 }
+body.mypdc-desk { overflow-x: hidden; }
