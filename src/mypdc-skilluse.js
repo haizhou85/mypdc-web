@@ -314,3 +314,126 @@
 	}, 500);
 	MyPDC.partBreak = { partBreakMul, update };
 })();
+
+// 平均伤害上限：宠物不间断开技时，平均每回合的伤害上限 = 上限 × 攻击点数（属性个数）× min(持续回合, CD) / CD
+// 多段技能按最后一段；循环技能 CD 相加；作用于其他队员的上限突破会覆盖对方非 1CD 的上限突破
+(function () {
+	const { el, teamStats } = MyPDC;
+	const stageCd = id => { const s = Skills[id]; return s ? Math.max(1, s.initialCooldown - s.maxLevel + 1) : 1; };
+	function capEffects(nodes) {
+		const out = [];
+		const walk = (n, turns) => {
+			if (Array.isArray(n)) { n.forEach(x => walk(x, turns)); return; }
+			if (!n || typeof n !== 'object') return;
+			if (n.kind === SkillKinds.RandomSkills) return;
+			if (n.kind === SkillKinds.ActiveTurns) { (n.skills || []).forEach(x => walk(x, n.turns)); return; }
+			if (turns && n.kind === SkillKinds.IncreaseDamageCapacity && n.cap > 0)
+				out.push({ cap: n.cap, turns, targets: n.targets || null, attrs: n.attrs || [], types: n.types || [] });
+			for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v, turns);
+		};
+		walk(nodes, 0);
+		return out;
+	}
+	const cache = new Map();
+	function skillCaps(card) {
+		if (!card?.activeSkillId) return { effects: [], cd: 1 };
+		if (cache.has(card.id)) return cache.get(card.id);
+		let res = { effects: [], cd: stageCd(card.activeSkillId) };
+		try {
+			const parsed = skillParser(card.activeSkillId);
+			const evo = (Array.isArray(parsed) ? parsed : [parsed]).find(n => n?.kind === SkillKinds.EvolvedSkills);
+			const ids = Skills[card.activeSkillId]?.params || [];
+			if (evo && evo.skills?.length) {
+				if (evo.loop) { // 循环：CD 相加，上限取各段里最大的
+					const all = evo.skills.map(st => capEffects(st)).flat();
+					res = { effects: all.length ? [all.reduce((a, b) => (b.cap > a.cap ? b : a))] : [], cd: ids.slice(0, evo.skills.length).reduce((s, id) => s + stageCd(id), 0) };
+				} else { // 多段：按最后一段
+					const last = evo.skills.length - 1;
+					res = { effects: capEffects(evo.skills[last]), cd: stageCd(ids[last]) };
+				}
+			} else res = { effects: capEffects(parsed), cd: stageCd(card.activeSkillId) };
+		} catch (e) { /* 忽略 */ }
+		cache.set(card.id, res);
+		return res;
+	}
+	const points = card => (card?.attrs || []).filter(a => a >= 0 && a <= 4).length;
+	const avgOf = (e, card) => e.cap * points(card) * Math.min(e.turns, e.cd) / e.cd;
+
+	function teamCaps(team) {
+		const members = team[0];
+		const leaderIdx = team[3] || 0, last = members.length - 1;
+		const assign = members.map(() => []);
+		members.forEach((m, j) => {
+			const card = m?.id > 0 ? Cards[m.id] : null;
+			if (!card) return;
+			const { effects, cd } = skillCaps(card);
+			effects.forEach(e => {
+				const idx = new Set();
+				if (e.targets) {
+					e.targets.forEach(t => {
+						if (t === 'self') idx.add(j);
+						else if (t === 'leader-self') idx.add(leaderIdx);
+						else if (t === 'leader-helper' && teamsCount !== 2) idx.add(last);
+						else if (t === 'sub-members') members.forEach((_, k) => { if (k !== leaderIdx && k !== last) idx.add(k); });
+						else if (t === 'left-neighbor' && j > 0) idx.add(j - 1);
+						else if (t === 'right-neighbor' && j < last) idx.add(j + 1);
+					});
+				} else { // 按属性 / 类型：符合的队员
+					members.forEach((mm, k) => {
+						const c = mm?.id > 0 ? Cards[mm.id] : null;
+						if (c && (e.attrs.some(a => c.attrs.includes(a)) || e.types.some(t => c.types.includes(t)))) idx.add(k);
+					});
+				}
+				idx.forEach(k => assign[k].push({ cap: e.cap, turns: e.turns, cd, src: j }));
+			});
+		});
+		return members.map((m, i) => {
+			const card = m?.id > 0 ? Cards[m.id] : null;
+			if (!card || !assign[i].length) return null;
+			const best = list => list.reduce((a, b) => (avgOf(b, card) > avgOf(a, card) ? b : a));
+			const own = assign[i].filter(e => e.src === i), other = assign[i].filter(e => e.src !== i);
+			let e;
+			if (own.length && own.some(x => x.cd === 1)) e = best(own.filter(x => x.cd === 1)); // 自己 1CD 的上限突破不会被覆盖
+			else if (other.length) e = best(other);
+			else e = best(own);
+			return { ...e, avg: avgOf(e, card), points: points(card) };
+		});
+	}
+
+	function fmtYi(v) {
+		const yi = v / 1e8;
+		if (yi >= 10000) return `${+(yi / 10000).toFixed(2)}万亿`;
+		return `${Math.round(yi).toLocaleString('en-US')}亿`;
+	}
+	function update(ti) {
+		const big = typeof teamBigBoxs !== 'undefined' ? teamBigBoxs[ti] : null;
+		const team = formation?.teams?.[ti];
+		if (!big || !team || typeof Skills === 'undefined' || Skills.length < 1000) return;
+		const caps = teamCaps(team);
+		let total = 0;
+		caps.forEach((c, i) => {
+			const li = big.querySelector(`.team-ability .abilitys[data-index="${i}"]`);
+			if (!li) return;
+			let d = li.querySelector('.mypdc-avgcap');
+			if (!d) { d = el('div', { class: 'mypdc-avgcap' }); li.append(d); }
+			if (c) {
+				total += c.avg;
+				d.textContent = fmtYi(c.avg);
+				d.title = `平均伤害上限：${fmtYi(c.cap)} × ${c.points}攻击点 × ${Math.min(c.turns, c.cd)}/${c.cd}（持续${c.turns}回合，CD${c.cd}${c.src !== i ? `，来自${c.src + 1}号的技能` : ''}）`;
+				d.hidden = false;
+			} else { d.textContent = ''; d.hidden = true; }
+		});
+		const hpDom = big.querySelector('.team-total-info .tIf-total-hp');
+		if (hpDom) {
+			let t = hpDom.querySelector('.mypdc-avgcap-total');
+			if (!t) { t = el('span', { class: 'mypdc-avgcap-total', title: '全队平均每回合伤害上限（不间断开技时）' }); hpDom.append(t); }
+			t.textContent = total > 0 ? fmtYi(total) : '';
+			t.hidden = !(total > 0);
+		}
+	}
+	MyPDC.onTeamUpdate(ti => { if (ti >= 0) update(ti); });
+	const t = setInterval(() => {
+		if (typeof Skills !== 'undefined' && Skills.length > 1000) { clearInterval(t); teamStats.forEach((s, i) => s && update(i)); }
+	}, 500);
+	MyPDC.avgCap = { teamCaps, skillCaps, update };
+})();

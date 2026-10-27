@@ -668,3 +668,10 @@ body.mypdc-panel-open .mypdc-result-fab { display: none; }
 .mypdc-dg-panel .mypdc-row > * { min-width: 0; max-width: 100%; }
 .mypdc-dg-skill-name, .mypdc-dg-enemy-title > span:first-child { overflow-wrap: anywhere; min-width: 0; }
 .mypdc-dg-skill-row > * { min-width: 0; }
+/* 平均伤害上限 */
+.abilitys .mypdc-avgcap { color: #e65100; font-weight: bold; white-space: nowrap; }
+.abilitys .mypdc-avgcap::before { content: "⚡"; }
+.tIf-total-hp .mypdc-avgcap-total { color: #e65100; font-weight: bold; margin-left: 6px; white-space: nowrap; }
+.tIf-total-hp .mypdc-avgcap-total::before { content: "⚡"; }
+/* 封觉醒时的 HP 不显示 */
+.tIf-total-hp .awoken-bind { display: none !important; }
