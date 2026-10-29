@@ -8,7 +8,7 @@
 	const ATTR_NAMES = ['火', '水', '木', '光', '暗'];
 	const BASE_CAP = 2147483647; // 每个攻击点的默认伤害上限（约 21.47 亿）
 
-	const st = Object.assign({ open: false, target: '', useSkill: false, activeMul: 1, cap: true, capSkill: false, boards: {} }, load('dmg-state', {}));
+	const st = Object.assign({ open: false, target: '', useSkill: false, atkBuff: '', cap: true, capSkill: false, boards: {} }, load('dmg-state', {}));
 	const saveSt = () => save('dmg-state', st);
 
 	// ---------- 觉醒倍率（2024 年以后的数值） ----------
@@ -309,6 +309,57 @@
 		return { atk: (f.atk || 1) ** times, rcv: (f.rcv || 1) ** times, active: true };
 	}
 
+	// ---------- 主动技的攻击力 buff（队员和武器的技能） ----------
+	function atkBuffs(team) {
+		const out = [];
+		const members = team[0], leaderIdx = team[3] || 0, last = members.length - 1;
+		const add = (card, j, isAssist) => {
+			if (!card || !card.activeSkillId) return;
+			let parsed;
+			try { parsed = skillParser(card.activeSkillId); } catch (e) { return; }
+			const walk = (n, turns) => {
+				if (Array.isArray(n)) { n.forEach(x => walk(x, turns)); return; }
+				if (!n || typeof n !== 'object') return;
+				if (n.kind === SkillKinds.RandomSkills) return;
+				if (n.kind === SkillKinds.ActiveTurns) { (n.skills || []).forEach(x => walk(x, n.turns)); return; }
+				const onlyHeart = listOf(n.attrs).length > 0 && listOf(n.attrs).every(x => x === 5); // 回复力 buff
+				if (turns && (n.kind === SkillKinds.PowerUp || n.kind === SkillKinds.SlotPowerUp) && !n.condition && !onlyHeart && n.value?.kind === 'mul' && (n.value.atk || 1) > 1) {
+					let idx = null;
+					if (n.targets) {
+						idx = new Set();
+						n.targets.forEach(t => {
+							if (t === 'self') idx.add(j);
+							else if (t === 'leader-self') idx.add(leaderIdx);
+							else if (t === 'leader-helper') idx.add(last);
+							else if (t === 'sub-members') members.forEach((_, k) => { if (k !== leaderIdx && k !== last) idx.add(k); });
+							else if (t === 'left-neighbor' && j > 0) idx.add(j - 1);
+							else if (t === 'right-neighbor' && j < last) idx.add(j + 1);
+							else if (t === 'team') members.forEach((_, k) => idx.add(k));
+						});
+					}
+					const TN = { self: '自己', 'left-neighbor': '左边', 'right-neighbor': '右边', 'leader-self': '队长', 'leader-helper': '好友队长', 'sub-members': '队员', team: '全队' };
+					const who = n.targets ? n.targets.map(t => TN[t] || t).join('、') : (listOf(n.attrs).length || listOf(n.types).length ? '部分队员' : '全队');
+					const text = `攻击×${+(n.value.atk).toFixed(2)} ${turns}回合${who ? ' ' + who : ''} · ${j + 1}号${isAssist ? '辅助' : ''} ${cardName(card.id)}`;
+					if (!out.some(o => o.text === text)) out.push({ key: card.id + ':' + out.length, text, atk: n.value.atk, idx, attrs: n.attrs, types: n.types });
+				}
+				for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v, turns);
+			};
+			walk(parsed, 0);
+		};
+		members.forEach((m, j) => {
+			if (m?.id > 0) add(Cards[m.id], j, false);
+			const a = team[1][j];
+			if (a?.id > 0) add(Cards[a.id], j, true);
+		});
+		return out;
+	}
+	function buffFor(mem, ctx) {
+		const b = ctx.buffs.find(x => x.text === st.atkBuff);
+		if (!b) return 1;
+		if (b.idx) return b.idx.has(mem.idx) ? b.atk : 1;
+		return memberMatches(b, mem) ? b.atk : 1;
+	}
+
 	// ---------- 计算 ----------
 	function compute(ctxBase) {
 		const { team, ti } = ctxBase;
@@ -319,7 +370,7 @@
 		const [l1, l2] = leaderIds(ti);
 		const leaders = [l1, l2].map(id => ({ id, nodes: leaderNodes(id) }));
 		const allNodes = leaders.flatMap(l => l.nodes);
-		const ctx = Object.assign({}, ctxBase, { mems, unknown: new Set(), hpPct: dstate.startHp || 100 });
+		const ctx = Object.assign({}, ctxBase, { mems, unknown: new Set(), hpPct: dstate.startHp || 100, buffs: atkBuffs(team) });
 
 		const { W, H, minLen } = ctx;
 		const res = solve(boardOf(W, H), W, H, minLen);
@@ -364,14 +415,16 @@
 			const skCap = skillCaps[mem.idx]?.cap || 0;
 			const cap = !st.cap ? Infinity : (st.capSkill && skCap > BASE_CAP ? skCap : BASE_CAP);
 			const lead = leaderFor(mem, 'atk');
-			const pts = [0, 1].map(k => {
+			const buff = buffFor(mem, ctx);
+			// 攻击点：主属、附属、三属（附属：和主属同色 10%、不同色 33%；三属固定 5%）
+			const pts = [0, 1, 2].map(k => {
 				const attr = mem.attrs[k];
 				if (!(attr >= 0 && attr <= 4)) return null;
-				if (k === 1 && !(mem.atk > 0)) return null;
 				let base = 0, shapeMul = 1;
 				bs.by[attr].forEach(cb => {
 					let d = Math.ceil(mem.atk * (1 + 0.25 * (cb.n - 3)));
 					if (k === 1) d = Math.ceil(d / (attr === mem.attrs[0] ? 10 : 3));
+					if (k === 2) d = Math.ceil(d * 0.05);
 					let m = 1;
 					if (cb.n === 4) m *= 2.2 ** mem.count(AW.TPA);
 					if (cb.shape === 'L') m *= 2.2 ** mem.count(AW.L);
@@ -412,7 +465,7 @@
 					if (strong[attr] === enemy.attr) eff = 2;
 					else if (weak[attr] === enemy.attr && !pairOn) eff = 0.5;
 				}
-				const active = Math.max(0, Number(st.activeMul) || 1);
+				const active = buff;
 				const raw = base * comboMul * awk * team * lead * active;
 				const full = Math.round(raw * killer * eff);
 				return {
@@ -491,8 +544,14 @@
 			el('label', null, el('input', { type: 'checkbox', checked: st.useSkill, onchange: e => { st.useSkill = e.target.checked; saveSt(); update(); } }), ' 已使用技能'),
 			el('label', { title: '每个攻击点默认上限约 21.47 亿' }, el('input', { type: 'checkbox', checked: st.cap, onchange: e => { st.cap = e.target.checked; saveSt(); update(); } }), ' 计入伤害上限'),
 			st.cap ? el('label', { title: '按队伍里的上限突破技能（和“平均伤害上限”的分配相同）' }, el('input', { type: 'checkbox', checked: st.capSkill, onchange: e => { st.capSkill = e.target.checked; saveSt(); update(); } }), ' 已开上限突破技能') : null,
-			el('label', { title: '主动技的攻击力提升倍率（全队）' }, '主动技攻击 ×',
-				el('input', { type: 'number', min: 0, step: 0.5, value: st.activeMul || 1, style: 'width:4em', onchange: e => { st.activeMul = Math.max(0, +e.target.value || 1); saveSt(); update(); } }))));
+			(() => {
+				const buffs = atkBuffs(team);
+				if (st.atkBuff && !buffs.some(b => b.text === st.atkBuff)) st.atkBuff = '';
+				return el('label', { class: 'mypdc-dg-skillpick' }, '⚔ 攻击buff ',
+					el('select', { disabled: !buffs.length, onchange: e => { st.atkBuff = e.target.value; saveSt(); update(); } },
+						el('option', { value: '' }, buffs.length ? '不开技' : '（队伍里没有）'),
+						buffs.map(b => el('option', { value: b.text, selected: b.text === st.atkBuff }, b.text))));
+			})()));
 
 		// 盘面
 		let result = null;
@@ -535,17 +594,19 @@
 			if (!row) return;
 			const head = D2.headIcon(row.mem.card.id, row.mem.attrs[0]);
 			const cells = row.pts.map((pt, k) => {
-				if (!pt) return el('div', { class: 'mypdc-dmg-pt mypdc-dmg-none' }, k ? '无副属性' : '-');
+				if (!pt) return el('div', { class: 'mypdc-dmg-pt mypdc-dmg-none' }, ['-', '无附属', '无三属'][k]);
 				total += pt.dmg || 0;
 				const p = pt.parts;
 				const tip = p ? `基础 ${fmt(p.base)} × 连击 ${+p.combo.toFixed(2)} × 觉醒 ${+p.awk.toFixed(2)} × 横列/属性连击 ${+p.team.toFixed(2)} × 队长 ${+p.lead.toFixed(2)}` +
-					(p.active !== 1 ? ` × 主动技 ${p.active}` : '') + (p.killer !== 1 ? ` × 杀手 ${+p.killer.toFixed(2)}` : '') + (p.eff !== 1 ? ` × 克制 ${p.eff}` : '') : '';
+					(p.active !== 1 ? ` × 攻击buff ${p.active}` : '') + (p.killer !== 1 ? ` × 杀手 ${+p.killer.toFixed(2)}` : '') + (p.eff !== 1 ? ` × 克制 ${p.eff}` : '') : '';
 				return el('div', { class: `mypdc-dmg-pt mypdc-attr-${pt.attr}`, title: tip },
-					el('span', { class: 'mypdc-dmg-ptattr' }, (k ? '副' : '主') + ATTR_NAMES[pt.attr]),
+					el('span', { class: 'mypdc-dmg-ptattr' }, ['主属', '附属', '三属'][k] + ATTR_NAMES[pt.attr]),
 					el('b', { title: fmt(pt.dmg) }, big(pt.dmg)),
 					pt.capped ? el('span', { class: 'mypdc-dmg-capped', title: '超过伤害上限，括号里是不封顶时的数值' }, `封顶（${big(pt.full)}）`) : null,
-					p ? el('span', { class: 'mypdc-dmg-parts' },
-						`觉醒×${short(p.awk * p.team)} 队长×${short(p.lead)}` + (p.killer !== 1 ? ` 杀×${short(p.killer)}` : '') + (p.eff !== 1 ? ` 克×${p.eff}` : '')) : null);
+					p ? el('span', { class: 'mypdc-dmg-parts' }, [
+						`觉醒×${short(p.awk * p.team)}`, `队长×${short(p.lead)}`,
+						p.active !== 1 ? `buff×${short(p.active)}` : null, p.killer !== 1 ? `杀×${short(p.killer)}` : null, p.eff !== 1 ? `克×${p.eff}` : null,
+					].filter(Boolean).map(t => el('span', null, t))) : null);
 			});
 			table.append(el('div', { class: 'mypdc-dmg-member' }, head, el('div', { class: 'mypdc-dmg-pts' }, cells)));
 		});

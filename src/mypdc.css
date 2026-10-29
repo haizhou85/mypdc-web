@@ -778,12 +778,14 @@ label[for="show-member-awoken"]::after { content: "队员觉醒" !important; }
 .mypdc-dmg-table { display: flex; flex-direction: column; gap: 4px; }
 .mypdc-dmg-member { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
 .mypdc-dmg-member .mypdc-dg-head { flex: none; }
-.mypdc-dmg-pts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; min-width: 0; }
+.mypdc-dmg-pts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; flex: 1; min-width: 0; }
 .mypdc-dmg-pt { display: flex; flex-direction: column; min-width: 0; }
 .mypdc-dmg-pt b { font-size: 1.1em; word-break: break-all; }
 .mypdc-dmg-ptattr { font-size: 0.8em; }
-.mypdc-dmg-parts { color: #888; font-size: 0.75em; word-break: break-all; }
+.mypdc-dmg-parts { color: #888; font-size: 0.75em; display: flex; flex-wrap: wrap; column-gap: 4px; }
+.mypdc-dmg-parts > span { white-space: nowrap; }
 .mypdc-dmg-none { color: #bbb; font-size: 0.85em; justify-content: center; }
 .mypdc-dmg-total { font-size: 1.1em; }
 .mypdc-dmg-capped { color: #c62828; font-size: 0.72em; word-break: break-all; }
 .mypdc-dmg-table, .mypdc-dmg-total, .mypdc-dmg-sum, .mypdc-dmg-note { max-width: 720px; width: 100%; align-self: center; }
+@media (max-width: 600px) { .mypdc-dmg-pt b { font-size: 0.95em; } .mypdc-dmg-member .mypdc-dg-head { width: 44px; height: 44px; } .mypdc-dmg-member .mypdc-dg-head > .monster { zoom: 0.44; } }
