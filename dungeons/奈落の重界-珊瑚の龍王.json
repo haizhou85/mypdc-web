@@ -2,7 +2,7 @@
  "name": "奈落の重界・珊瑚の龍王",
  "server": "ja",
  "data": {
-  "rev": 1,
+  "rev": 2,
   "benefit": 2,
   "note": "「珊瑚」チャレンジ！根据 PDC 截图录入（全层）。",
   "floors": [
@@ -353,6 +353,38 @@
         "type": "normal",
         "tags": [],
         "note": "3回目行動以降・攻撃力1.2倍時"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "6F",
+    "enemies": [
+     {
+      "name": "ダブプラリット",
+      "cardId": 9536,
+      "attr": 3,
+      "skills": [
+       {
+        "name": "アタックプラス",
+        "pre": false,
+        "damage": 2000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       },
+       {
+        "name": "プラッシュハリケーン",
+        "pre": false,
+        "damage": 20000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "攻撃力10倍時"
        }
       ]
      }
