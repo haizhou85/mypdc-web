@@ -8,13 +8,13 @@
 	const ATTR_NAMES = ['火', '水', '木', '光', '暗'];
 	const BASE_CAP = 2147483647; // 每个攻击点的默认伤害上限（约 21.47 亿）
 
-	const st = Object.assign({ open: false, target: '', useSkill: false, atkBuff: '', cap: true, capSkill: false, boards: {} }, load('dmg-state', {}));
+	const st = Object.assign({ open: false, target: '', useSkill: false, atkBuff: '', comboBuff: '', cap: true, capSkill: false, boards: {} }, load('dmg-state', {}));
 	const saveSt = () => save('dmg-state', st);
 
 	// ---------- 觉醒倍率（2024 年以后的数值） ----------
 	const AW = {
 		TPA: 27, L: 60, VDP: 48, CROSS: 78, T: 126, CONNECT12: 82,
-		C7: 43, C10: 61, C15: 144, HP_HIGH: 57, HP_LOW: 58,
+		LEVITATE: 106, C7: 43, C10: 61, C15: 144, HP_HIGH: 57, HP_LOW: 58,
 		COLOR3: 79, COLOR4: 80, COLOR5: 81, GUARD_BREAK: 44, HEART_L: 59, TEAM_RCV: 47,
 		PAIRS: [[133, 0, 1], [134, 1, 2], [135, 2, 0]], // 火水、水木、木火同时攻击
 		ROW: [22, 23, 24, 25, 26], ATTR_COMBO: [73, 74, 75, 76, 77], COLUMN: [149, 150, 151, 152, 153],
@@ -340,7 +340,11 @@
 					const TN = { self: '自己', 'left-neighbor': '左边', 'right-neighbor': '右边', 'leader-self': '队长', 'leader-helper': '好友队长', 'sub-members': '队员', team: '全队' };
 					const who = n.targets ? n.targets.map(t => TN[t] || t).join('、') : (listOf(n.attrs).length || listOf(n.types).length ? '部分队员' : '全队');
 					const text = `攻击×${+(n.value.atk).toFixed(2)} ${turns}回合${who ? ' ' + who : ''} · ${j + 1}号${isAssist ? '辅助' : ''} ${cardName(card.id)}`;
-					if (!out.some(o => o.text === text)) out.push({ key: card.id + ':' + out.length, text, atk: n.value.atk, idx, attrs: n.attrs, types: n.types });
+					if (!out.some(o => o.text === text)) out.push({ kind: 'atk', text, atk: n.value.atk, idx, attrs: n.attrs, types: n.types });
+				}
+				if (turns && n.kind === SkillKinds.AddCombo && n.value > 0) {
+					const text = `+${n.value}连击 ${turns}回合 · ${j + 1}号${isAssist ? '辅助' : ''} ${cardName(card.id)}`;
+					if (!out.some(o => o.text === text)) out.push({ kind: 'combo', text, combo: n.value });
 				}
 				for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v, turns);
 			};
@@ -354,7 +358,7 @@
 		return out;
 	}
 	function buffFor(mem, ctx) {
-		const b = ctx.buffs.find(x => x.text === st.atkBuff);
+		const b = ctx.buffs.find(x => x.kind === 'atk' && x.text === st.atkBuff);
 		if (!b) return 1;
 		if (b.idx) return b.idx.has(mem.idx) ? b.atk : 1;
 		return memberMatches(b, mem) ? b.atk : 1;
@@ -377,17 +381,20 @@
 		const bs = ctx.bs = boardStats(res.combos, res.remain);
 		const powerUps = allNodes.filter(n => n.kind === 'power-up');
 
-		// 加 C、固定追打（队长技条件满足时）
+		// 加 C（两个队长技条件满足时 + 加C技能）、固定追打
 		let addCombo = 0, fixedFollow = 0;
+		const comboFrom = [];
 		ctx.heal = null;
 		powerUps.forEach(n => {
 			const f = powerUpFactor(n, null, ctx);
 			if (!f.active) return;
 			listOf(n.additional).forEach(a => {
-				if (a?.kind === 'add-combo') addCombo += a.value || 0;
+				if (a?.kind === 'add-combo' && a.value) { addCombo += a.value; comboFrom.push(`队长+${a.value}`); }
 				if (a?.kind === 'follow-attack-fixed') fixedFollow += a.value?.value || 0;
 			});
 		});
+		const cb = ctx.buffs.find(x => x.kind === 'combo' && x.text === st.comboBuff);
+		if (cb) { addCombo += cb.combo; comboFrom.push(`技能+${cb.combo}`); }
 		const totalCombos = bs.count + addCombo;
 		const comboMul = totalCombos > 0 ? 1 + 0.25 * (totalCombos - 1) : 0;
 
@@ -408,6 +415,8 @@
 		const enemyTypes = enemy?.cardId && Cards[enemy.cardId] ? Cards[enemy.cardId].types : [];
 		const killerTable = typeof typekiller_for_type !== 'undefined' ? typekiller_for_type : [];
 
+		// 超重力：关卡攻击力倍率（<1）；有浮游觉醒的队员 ×50（最多回到 1 倍）
+		const gRate = Number(MyPDC.dungeon.data?.atkRate) || 1;
 		let skillCaps = [];
 		try { skillCaps = MyPDC.avgCap?.teamCaps(team) || []; } catch (e) { /* 忽略 */ }
 		const rows = mems.map(mem => {
@@ -416,6 +425,7 @@
 			const cap = !st.cap ? Infinity : (st.capSkill && skCap > BASE_CAP ? skCap : BASE_CAP);
 			const lead = leaderFor(mem, 'atk');
 			const buff = buffFor(mem, ctx);
+			const grav = gRate < 1 ? (mem.count(AW.LEVITATE) > 0 ? Math.min(1, gRate * 50) : gRate) : 1;
 			// 攻击点：主属、附属、三属（附属：和主属同色 10%、不同色 33%；三属固定 5%）
 			const pts = [0, 1, 2].map(k => {
 				const attr = mem.attrs[k];
@@ -466,11 +476,11 @@
 					else if (weak[attr] === enemy.attr && !pairOn) eff = 0.5;
 				}
 				const active = buff;
-				const raw = base * comboMul * awk * team * lead * active;
+				const raw = base * comboMul * awk * team * lead * active * grav;
 				const full = Math.round(raw * killer * eff);
 				return {
 					attr, raw: Math.round(raw), full, dmg: Math.min(full, cap), capped: full > cap, cap,
-					parts: { base: Math.round(base), combo: comboMul, awk, team, lead, active, killer, eff },
+					parts: { base: Math.round(base), combo: comboMul, awk, team, lead, active, grav, killer, eff },
 				};
 			});
 			return { mem, lead, pts };
@@ -481,7 +491,7 @@
 			if (n.kind === 'follow-attack') ctx.unknown.add('攻击后追打（按攻击力倍数）');
 			if (n.kind === 'impart-awakenings') ctx.unknown.add('队长技赋予觉醒');
 		});
-		return { bs, res, rows, addCombo, totalCombos, comboMul, fixedFollow, heal, unknown: [...ctx.unknown], leaders };
+		return { bs, res, rows, addCombo, comboFrom, totalCombos, comboMul, fixedFollow, heal, unknown: [...ctx.unknown], leaders };
 	}
 
 	// ---------- 界面 ----------
@@ -545,12 +555,16 @@
 			el('label', { title: '每个攻击点默认上限约 21.47 亿' }, el('input', { type: 'checkbox', checked: st.cap, onchange: e => { st.cap = e.target.checked; saveSt(); update(); } }), ' 计入伤害上限'),
 			st.cap ? el('label', { title: '按队伍里的上限突破技能（和“平均伤害上限”的分配相同）' }, el('input', { type: 'checkbox', checked: st.capSkill, onchange: e => { st.capSkill = e.target.checked; saveSt(); update(); } }), ' 已开上限突破技能') : null,
 			(() => {
-				const buffs = atkBuffs(team);
-				if (st.atkBuff && !buffs.some(b => b.text === st.atkBuff)) st.atkBuff = '';
-				return el('label', { class: 'mypdc-dg-skillpick' }, '⚔ 攻击buff ',
-					el('select', { disabled: !buffs.length, onchange: e => { st.atkBuff = e.target.value; saveSt(); update(); } },
-						el('option', { value: '' }, buffs.length ? '不开技' : '（队伍里没有）'),
-						buffs.map(b => el('option', { value: b.text, selected: b.text === st.atkBuff }, b.text))));
+				const all = atkBuffs(team);
+				const pick = (kind, key, label) => {
+					const buffs = all.filter(b => b.kind === kind);
+					if (st[key] && !buffs.some(b => b.text === st[key])) st[key] = '';
+					return el('label', { class: 'mypdc-dg-skillpick' }, label,
+						el('select', { disabled: !buffs.length, onchange: e => { st[key] = e.target.value; saveSt(); update(); } },
+							el('option', { value: '' }, buffs.length ? '不开技' : '（队伍里没有）'),
+							buffs.map(b => el('option', { value: b.text, selected: b.text === st[key] }, b.text))));
+				};
+				return [pick('atk', 'atkBuff', '⚔ 攻击buff '), pick('combo', 'comboBuff', '➕ 加C技能 ')];
 			})()));
 
 		// 盘面
@@ -582,7 +596,8 @@
 		const chips = bs.combos.map(cb => el('span', { class: `mypdc-dmg-chip mypdc-attr-${cb.color}` },
 			ORB_NAMES[cb.color] + cb.n + (cb.rowCount ? ' 横列' : '') + (cb.colCount ? ' 竖列' : '') + (shapeName[cb.shape] ? ' ' + shapeName[cb.shape] : '') + (cb.wave ? ' 连锁' : '')));
 		inner.append(el('div', { class: 'mypdc-dmg-sum' },
-			el('b', null, `${bs.count} 连击` + (result.addCombo ? ` +${result.addCombo}` : '') + `（×${+result.comboMul.toFixed(2)}）`),
+			el('b', null, `${bs.count} 连击` + (result.addCombo ? ` +${result.addCombo}（${result.comboFrom.join('、')}）` : '') + `（×${+result.comboMul.toFixed(2)}）`),
+			(Number(MyPDC.dungeon.data?.atkRate) < 1 ? ` · 超重力 攻击×${MyPDC.dungeon.data.atkRate}（浮游 ×50）` : '') +
 			` · ${bs.attackColors} 色 · 剩余 ${bs.remain} 珠` + (result.heal ? ` · 回复 ${fmt(result.heal)}` : ''),
 			el('div', { class: 'mypdc-dmg-chips' }, chips.length ? chips : '（没有消除）')));
 
@@ -598,14 +613,14 @@
 				total += pt.dmg || 0;
 				const p = pt.parts;
 				const tip = p ? `基础 ${fmt(p.base)} × 连击 ${+p.combo.toFixed(2)} × 觉醒 ${+p.awk.toFixed(2)} × 横列/属性连击 ${+p.team.toFixed(2)} × 队长 ${+p.lead.toFixed(2)}` +
-					(p.active !== 1 ? ` × 攻击buff ${p.active}` : '') + (p.killer !== 1 ? ` × 杀手 ${+p.killer.toFixed(2)}` : '') + (p.eff !== 1 ? ` × 克制 ${p.eff}` : '') : '';
+					(p.active !== 1 ? ` × 攻击buff ${p.active}` : '') + (p.grav !== 1 ? ` × 超重力 ${p.grav}` : '') + (p.killer !== 1 ? ` × 杀手 ${+p.killer.toFixed(2)}` : '') + (p.eff !== 1 ? ` × 克制 ${p.eff}` : '') : '';
 				return el('div', { class: `mypdc-dmg-pt mypdc-attr-${pt.attr}`, title: tip },
 					el('span', { class: 'mypdc-dmg-ptattr' }, ['主属', '附属', '三属'][k] + ATTR_NAMES[pt.attr]),
 					el('b', { title: fmt(pt.dmg) }, big(pt.dmg)),
 					pt.capped ? el('span', { class: 'mypdc-dmg-capped', title: '超过伤害上限，括号里是不封顶时的数值' }, `封顶（${big(pt.full)}）`) : null,
 					p ? el('span', { class: 'mypdc-dmg-parts' }, [
 						`觉醒×${short(p.awk * p.team)}`, `队长×${short(p.lead)}`,
-						p.active !== 1 ? `buff×${short(p.active)}` : null, p.killer !== 1 ? `杀×${short(p.killer)}` : null, p.eff !== 1 ? `克×${p.eff}` : null,
+						p.active !== 1 ? `buff×${short(p.active)}` : null, p.grav !== 1 ? `重力×${+p.grav.toPrecision(3)}` : null, p.killer !== 1 ? `杀×${short(p.killer)}` : null, p.eff !== 1 ? `克×${p.eff}` : null,
 					].filter(Boolean).map(t => el('span', null, t))) : null);
 			});
 			table.append(el('div', { class: 'mypdc-dmg-member' }, head, el('div', { class: 'mypdc-dmg-pts' }, cells)));

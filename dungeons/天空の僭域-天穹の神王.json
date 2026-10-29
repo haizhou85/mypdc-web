@@ -2,7 +2,7 @@
  "name": "天空の僭域・天穹の神王",
  "server": "ja",
  "data": {
-  "rev": 4,
+  "rev": 5,
   "note": "根据 PDC 截图录入（全层）。",
   "floors": [
    {
@@ -886,6 +886,7 @@
     ]
    }
   ],
-  "benefit": 1
+  "benefit": 1,
+  "atkRate": 0.0016667
  }
 }

@@ -269,6 +269,8 @@
 		if (data.benefit) wrap.append(el('div', { class: 'mypdc-dg-benefit' },
 			el('span', { class: 'awoken-icon', 'data-awoken-icon': data.benefit === 2 ? 129 : 128 }),
 			data.benefit === 2 ? '陰の加護（阴之加护）' : '陽の加護（阳之加护）', el('span', { class: 'mypdc-dg-skill-note' }, '有这个觉醒的队员 HP ×2，已计入')));
+		if (data.atkRate > 0 && data.atkRate < 1) wrap.append(el('div', { class: 'mypdc-dg-benefit' },
+			`【超重力】攻击力 ×${data.atkRate}`, el('span', { class: 'mypdc-dg-skill-note' }, '有浮游觉醒的队员 ×50（伤害模拟里已计入）')));
 		if (cur?.data?.note) wrap.append(el('div', { class: 'mypdc-dg-note' }, cur.data.note));
 		(data.floors || []).forEach(fl => (fl.enemies || []).forEach(en => {
 			const info = teamInfo(floorStage(fl));
@@ -324,7 +326,9 @@
 			el('label', null, '服务器 ', el('select', { onchange: e => { d.server = e.target.value; } },
 				[['ja', '日服'], ['en', '美服'], ['ko', '韩服']].map(([v, t]) => el('option', { value: v, selected: d.server === v }, t)))),
 			el('label', null, '加护 ', el('select', { onchange: e => { data.benefit = +e.target.value || 0; } },
-				[[0, '无'], [1, '陽の加護'], [2, '陰の加護']].map(([v, t]) => el('option', { value: v, selected: (data.benefit || 0) === v }, t))))),
+				[[0, '无'], [1, '陽の加護'], [2, '陰の加護']].map(([v, t]) => el('option', { value: v, selected: (data.benefit || 0) === v }, t)))),
+			el('label', { title: '超重力：攻击力倍率，例如 0.0002；没有就留空' }, '超重力 攻击× ',
+				el('input', { type: 'number', min: 0, step: 'any', value: data.atkRate || '', placeholder: '无', style: 'width:7em', oninput: e => { const v = +e.target.value; if (v > 0 && v < 1) data.atkRate = v; else delete data.atkRate; } }))),
 			el('label', { class: 'mypdc-dg-field' }, '关卡说明 ', el('textarea', { rows: 2, oninput: e => { data.note = e.target.value; } }, data.note || '')));
 
 		data.floors.forEach((fl, fi) => {
