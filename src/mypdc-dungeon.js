@@ -152,7 +152,7 @@
 		for (let i = 0; i < hits && hp > 0; i++) {
 			let d;
 			if (skill.type === 'fixed') d = Math.floor(per);
-			else if (skill.type === 'gravity') d = Math.floor(hp * total / 100);
+			else if (skill.type === 'gravity') d = Math.ceil(hp * total / 100 * keepAt(info, attr, hp / info.maxHp * 100, extraAttr)); // 重力也吃减伤
 			else d = Math.ceil(per * keepAt(info, attr, hp / info.maxHp * 100, extraAttr));
 			hp -= d; taken += d;
 		}
@@ -160,7 +160,7 @@
 	}
 	// 还要几个属性减伤潜觉才扛得住：[普通 1%, +版 2.5%]
 	function latentNeed(info, skill, attr) {
-		if (skill.type !== 'normal' || !(skill.damage > 0)) return null;
+		if (skill.type === 'fixed' || !(skill.damage > 0)) return null;
 		if (hit(info, skill, attr, 0).survived) return [0, 0];
 		return [0.01, 0.025].map(step => {
 			for (let n = 1; n <= 100; n++) if (hit(info, skill, attr, n * step).survived) return n;

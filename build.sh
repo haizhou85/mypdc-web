@@ -53,6 +53,11 @@ for page in solo.html multi.html triple.html; do
 	patch "$page" 'name="type-and-or" id="type-and-or" checked>' 'name="type-and-or" id="type-and-or">'
 done
 patch script.js 'const browser_i18n = navigator.language;' 'const browser_i18n = "zh-CN";'
+# 搜索里点“装备觉醒”时，上游会自动清空类型和稀有度的选择；保留用户已经选好的
+patch script.js '				//自动恢复所有类型
+				s_types.forEach(chk=>chk.checked=false);
+				//自动恢复所有星级
+				s_rareClear.onclick();' '				//（我的 PDC：保留已选的类型和星级）'
 patch index.html 'let browser_i18n = (navigator.language||navigator.userLanguage);' 'let browser_i18n = "zh-CN";'
 
 # 网页名称
