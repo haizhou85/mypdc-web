@@ -744,3 +744,46 @@ label[for="show-member-awoken"]::after { content: "队员觉醒" !important; }
 .mypdc-open-btn.mypdc-open-inline { font-size: 21px !important; padding: 8px 18px !important; border-radius: 24px !important; }
 .mypdc-dg-benefit { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0; font-weight: bold; }
 .mypdc-dg-benefit .awoken-icon { width: 28px; height: 28px; flex: none; }
+
+/* ---------- 队伍伤害模拟 ---------- */
+.mypdc-dmg > summary { cursor: pointer; font-weight: bold; font-size: 1.05em; padding: 2px 0; }
+.mypdc-dmg-hint { font-weight: normal; color: #888; font-size: 0.85em; }
+.mypdc-dmg-inner { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.mypdc-dmg-opts select { max-width: 15em; }
+.mypdc-dmg-boardwrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.mypdc-dmg-board {
+	display: grid; gap: 2px; width: min(100%, 330px); padding: 4px; border-radius: 8px;
+	background: #5a3f2a;
+}
+.mypdc-dmg .mypdc-dmg-orb, .mypdc-dmg .mypdc-dmg-fill {
+	aspect-ratio: 1; width: 100%; height: auto; padding: 0 !important; margin: 0 !important; border: none !important; border-radius: 50% !important;
+	background: url(images/icon-orbs.png) no-repeat !important; background-size: 200% 1000% !important; min-height: 0 !important; min-width: 0 !important;
+	box-shadow: none; cursor: pointer; transition: transform 0.08s; -webkit-tap-highlight-color: transparent;
+}
+.mypdc-dmg .mypdc-dmg-orb:active { transform: scale(0.88); }
+.mypdc-dmg .mypdc-dmg-orb.on { box-shadow: 0 0 0 2px #fff, 0 0 8px 2px #ffd54f; }
+.mypdc-dmg .mypdc-dmg-fill { width: 26px; height: 26px; flex: none; }
+.mypdc-dmg [data-orb="0"] { background-position: 0 0 !important; }
+.mypdc-dmg [data-orb="1"] { background-position: 0 calc(100% / 9 * 1) !important; }
+.mypdc-dmg [data-orb="2"] { background-position: 0 calc(100% / 9 * 2) !important; }
+.mypdc-dmg [data-orb="3"] { background-position: 0 calc(100% / 9 * 3) !important; }
+.mypdc-dmg [data-orb="4"] { background-position: 0 calc(100% / 9 * 4) !important; }
+.mypdc-dmg [data-orb="5"] { background-position: 0 calc(100% / 9 * 5) !important; }
+.mypdc-dmg-tools { justify-content: center; align-items: center; gap: 6px; }
+.mypdc-dmg-size, .mypdc-dmg-tip, .mypdc-dmg-note { color: #888; font-size: 0.85em; }
+.mypdc-dmg-tip { text-align: center; }
+.mypdc-dmg-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.mypdc-dmg-chip { border: 1px solid currentColor; border-radius: 10px; padding: 0 7px; font-size: 0.85em; }
+.mypdc-attr-5 { color: #e2569a; }
+.mypdc-dmg-table { display: flex; flex-direction: column; gap: 4px; }
+.mypdc-dmg-member { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+.mypdc-dmg-member .mypdc-dg-head { flex: none; }
+.mypdc-dmg-pts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; min-width: 0; }
+.mypdc-dmg-pt { display: flex; flex-direction: column; min-width: 0; }
+.mypdc-dmg-pt b { font-size: 1.1em; word-break: break-all; }
+.mypdc-dmg-ptattr { font-size: 0.8em; }
+.mypdc-dmg-parts { color: #888; font-size: 0.75em; word-break: break-all; }
+.mypdc-dmg-none { color: #bbb; font-size: 0.85em; justify-content: center; }
+.mypdc-dmg-total { font-size: 1.1em; }
+.mypdc-dmg-capped { color: #c62828; font-size: 0.72em; word-break: break-all; }
+.mypdc-dmg-table, .mypdc-dmg-total, .mypdc-dmg-sum, .mypdc-dmg-note { max-width: 720px; width: 100%; align-self: center; }

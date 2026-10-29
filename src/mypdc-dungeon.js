@@ -199,6 +199,7 @@
 			if (editing) body.append(renderEditor());
 			else {
 				body.append(renderTeam());
+				if (MyPDC.damage) body.append(MyPDC.damage.box());
 				if (cur) body.append(renderDungeon(cur.data || {}));
 			}
 			body.scrollTop = scroll;
@@ -454,5 +455,20 @@
 		MyPDC.onTeamUpdate(() => { if (!editing) render(); });
 	}
 	window.addEventListener('load', build);
-	MyPDC.dungeon = { open };
+	// 给伤害模拟用：临时按某层设置熟成 / 部位破坏 / 加护
+	function withDge(stage, fn) {
+		const dge = formation?.dungeonEnchance;
+		if (!dge) return fn();
+		const saved = [dge.stage, dge.brokens, dge.benefit];
+		try {
+			dge.stage = stage || 1; dge.brokens = state.brokens || 0; dge.benefit = cur?.data?.benefit || 0;
+			return fn();
+		} finally { [dge.stage, dge.brokens, dge.benefit] = saved; }
+	}
+	MyPDC.dungeon = {
+		open, withDge, headIcon, floorStage, render,
+		get state() { return state; },
+		get data() { return cur?.data || null; },
+		teamIndex: () => Math.min(state.teamIdx, (formation?.teams?.length || 1) - 1),
+	};
 })();
