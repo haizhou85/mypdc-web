@@ -480,3 +480,30 @@ const MyPDC = (function () {
 		});
 	}, 300));
 })();
+
+// 随机技能（118，随机发动其中之一）：上游搜索默认不看里面的内容。
+// 改为：每个分支都有的效果（类型和数值完全相同）算作必定发动，可以被搜到；只在部分分支里的效果仍然不算。
+(function () {
+	if (typeof getActuallySkills !== 'function' || typeof getCardActiveSkills !== 'function') return;
+	const key = s => s.type + ':' + JSON.stringify(s.params);
+	function sure(skill, types, depth) {
+		if (!skill || depth > 8) return [];
+		if (types.includes(skill.type)) return [skill];
+		if (skill.type == 118) {
+			const branches = skill.params.map(id => sure(Skills[id], types, depth + 1));
+			if (!branches.length || branches.some(b => !b.length)) return [];
+			const rest = branches.slice(1).map(b => new Set(b.map(key)));
+			return branches[0].filter(s => rest.every(r => r.has(key(s))));
+		}
+		if ([116, 138, 232, 233, 248].includes(skill.type)) {
+			const params = (skill.type == 248 ? skill.params.slice(1) : skill.params.concat()).reverse();
+			return params.flatMap(id => sure(Skills[id], types, depth + 1));
+		}
+		return [];
+	}
+	window.getCardActiveSkills = function (card, skillTypes, searchRandom = false) {
+		if (!card) return [];
+		if (searchRandom) return getActuallySkills(Skills[card.activeSkillId], skillTypes, true);
+		return sure(Skills[card.activeSkillId], skillTypes, 0);
+	};
+})();
