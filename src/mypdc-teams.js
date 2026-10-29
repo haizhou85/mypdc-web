@@ -174,7 +174,7 @@
 
 	function buildLibrary() {
 		lib = el('div', { class: 'mypdc-panel mypdc-team-lib display-none' });
-		searchInput = el('input', { type: 'search', placeholder: '搜索名称、作者、备注', class: 'mypdc-team-search' });
+		searchInput = el('input', { type: 'search', placeholder: '搜索名称、作者、备注，或宠物编号（多个用空格隔开）', class: 'mypdc-team-search' });
 		let timer;
 		searchInput.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { query = searchInput.value.trim(); reload(); }, 300); };
 		listBox = el('div', { class: 'mypdc-team-list' });
@@ -230,7 +230,8 @@
 			const r = await api(`/api/teams?limit=30${before ? '&before=' + before : ''}${q ? '&q=' + encodeURIComponent(q) : ''}`);
 			if (q !== query) return;
 			items.push(...r.items); more = r.more;
-			whenCards(() => r.items.forEach(t => listBox.append(renderItem(t))));
+			const hitIds = r.ids || [];
+			whenCards(() => r.items.forEach(t => listBox.append(renderItem(t, hitIds))));
 			if (!items.length) listBox.append(el('p', { class: 'mypdc-team-empty' }, q ? '没有找到符合的队伍。' : '还没有保存的队伍。'));
 		} catch (e) {
 			listBox.append(el('p', { class: 'mypdc-team-msg' }, e.message));
@@ -241,7 +242,7 @@
 		}
 	}
 
-	function renderItem(t) {
+	function renderItem(t, hitIds = []) {
 		const row = el('div', { class: 'mypdc-team-item' });
 		// 列表里没有编队数据：点开时再读取完整队伍
 		const open = async () => {
@@ -252,8 +253,17 @@
 				window.alert(e.message); // eslint-disable-line no-alert
 			}
 		};
+		const hit = id => hitIds.includes(id);
 		const heads = el('div', { class: 'mypdc-team-heads' },
-			t.members.map(team => el('div', { class: 'mypdc-team-row' }, team.map(headIcon))));
+			t.members.map(team => el('div', { class: 'mypdc-team-row' }, team.map(id => {
+				const h = headIcon(id);
+				if (hit(id)) h.classList.add('mypdc-team-hit');
+				return h;
+			}))));
+		// 搜索的编号只在辅助里：列出那些辅助
+		const assistHits = (t.assists || []).flat().filter((id, i, a) => hit(id) && a.indexOf(id) === i && !t.members.flat().includes(id));
+		if (assistHits.length) heads.append(el('div', { class: 'mypdc-team-row mypdc-team-assisthit' },
+			el('span', { class: 'mypdc-team-assistlabel' }, '辅助'), assistHits.map(id => { const h = headIcon(id); h.classList.add('mypdc-team-hit'); return h; })));
 		const actions = el('div', { class: 'mypdc-team-item-actions' },
 			el('button', { type: 'button', onclick: e => { e.stopPropagation(); copy(shareUrl(t.id), e.target); } }, '🔗'));
 		if (adminView && isAdmin) {

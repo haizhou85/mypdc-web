@@ -72,16 +72,32 @@ async function list(req, env, url) {
 	const limit = Math.min(LIMITS.pageSize, Math.max(1, parseInt(url.searchParams.get('limit'), 10) || 30));
 	const where = [], args = [];
 	if (before > 0) { where.push('id < ?'); args.push(before); }
-	if (q) {
+	// 纯数字（可多个，空格或逗号隔开）：按宠物编号找队伍，队员和辅助都算，多个编号要同时出现
+	const ids = /^[\d\s,，]+$/.test(q) ? [...new Set(q.split(/[\s,，]+/).map(Number).filter(n => Number.isInteger(n) && n > 0 && n < 1e6))].slice(0, 6) : [];
+	if (ids.length) {
+		ids.forEach(id => {
+			where.push(`(EXISTS (SELECT 1 FROM json_each(teams.members) t, json_each(t.value) m WHERE m.value = ?)
+				OR EXISTS (SELECT 1 FROM json_each(teams.data, '$.f') t, json_each(t.value, '$[1]') a
+					WHERE (CASE a.type WHEN 'array' THEN json_extract(a.value, '$[0]') ELSE a.value END) = ?))`);
+			args.push(id, id);
+		});
+	} else if (q) {
 		const like = '%' + q.replace(/[\\%_]/g, c => '\\' + c) + '%';
 		where.push("(title LIKE ? ESCAPE '\\' OR author LIKE ? ESCAPE '\\' OR note LIKE ? ESCAPE '\\')");
 		args.push(like, like, like);
 	}
-	const sql = `SELECT id, title, author, note, page, server, members, created FROM teams
+	const sql = `SELECT id, title, author, note, page, server, members, created${ids.length ? ', data' : ''} FROM teams
 		${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY id DESC LIMIT ?`;
 	const { results } = await env.DB.prepare(sql).bind(...args, limit + 1).all();
 	const more = results.length > limit;
-	return json(req, { items: results.slice(0, limit).map(r => rowOut(r, false)), more });
+	const items = results.slice(0, limit).map(r => {
+		const o = rowOut(r, false);
+		if (ids.length) { // 告诉前端哪些编号是在辅助里找到的
+			try { o.assists = JSON.parse(r.data).f.map(t => (Array.isArray(t?.[1]) ? t[1] : []).slice(0, 6).map(memberId)); } catch (e) { o.assists = []; }
+		}
+		return o;
+	});
+	return json(req, { items, more, ids });
 }
 
 async function getOne(req, env, id) {
