@@ -1,0 +1,873 @@
+{
+ "name": "奈落の重界・珊瑚の龍王",
+ "server": "ja",
+ "data": {
+  "rev": 1,
+  "benefit": 2,
+  "note": "「珊瑚」チャレンジ！根据 PDC 截图录入（全层）。",
+  "floors": [
+   {
+    "name": "乱入",
+    "enemies": [
+     {
+      "name": "剛直の整備士・クライヴ",
+      "cardId": 9064,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "オーバーメンテナンス",
+        "pre": true,
+        "damage": 13500000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       },
+       {
+        "name": "ネイルスパイク",
+        "pre": false,
+        "damage": 15000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       },
+       {
+        "name": "オーバーメンテナンス",
+        "pre": false,
+        "damage": 19500000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "部位破壊後2回目・攻撃力1.3倍時"
+       }
+      ]
+     }
+    ],
+    "stage": 1
+   },
+   {
+    "name": "1F",
+    "enemies": [
+     {
+      "name": "海の古代龍・シーラカンス",
+      "cardId": 2580,
+      "attr": 4,
+      "skills": [
+       {
+        "name": "通常攻撃",
+        "pre": false,
+        "damage": 2350000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     },
+     {
+      "name": "炎の古代龍・アンモナイト",
+      "cardId": 2577,
+      "attr": 0,
+      "skills": [
+       {
+        "name": "通常攻撃",
+        "pre": false,
+        "damage": 2350000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     },
+     {
+      "name": "湖の古代龍・シーラカンス",
+      "cardId": 2579,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "生きた化石の秘策",
+        "pre": false,
+        "damage": 2350000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "2F",
+    "enemies": [
+     {
+      "name": "紅の海賊龍・バーソロミュー",
+      "cardId": 974,
+      "attr": 0,
+      "skills": [
+       {
+        "name": "紅海龍の砲撃",
+        "pre": true,
+        "damage": 8000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     },
+     {
+      "name": "蒼の海賊龍・アルビダ",
+      "cardId": 975,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "蒼海龍の砲撃",
+        "pre": true,
+        "damage": 8000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     },
+     {
+      "name": "碧の海賊龍・キャプテンキッド",
+      "cardId": 976,
+      "attr": 2,
+      "skills": [
+       {
+        "name": "碧海龍の砲撃",
+        "pre": true,
+        "damage": 8000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "3F",
+    "enemies": [
+     {
+      "name": "リバティーガイスト",
+      "cardId": 3014,
+      "attr": 0,
+      "skills": [
+       {
+        "name": "ヒートアップ",
+        "pre": true,
+        "damage": 10000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       },
+       {
+        "name": "バーンヒート + クラッシュクロウ等",
+        "pre": false,
+        "damage": 30000000,
+        "hits": 2,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "初回行動・攻撃力3倍時（15,000,000×2）"
+       },
+       {
+        "name": "バーンヒート + クラッシュクロウ等",
+        "pre": false,
+        "damage": 10000000,
+        "hits": 2,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "5,000,000×2"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "4F",
+    "enemies": [
+     {
+      "name": "火の古代龍・アノマロカリス",
+      "cardId": 2575,
+      "attr": 0,
+      "skills": [
+       {
+        "name": "紅きカンブリア",
+        "pre": true,
+        "damage": 3330000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       },
+       {
+        "name": "危険察知",
+        "pre": false,
+        "damage": 3330000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     },
+     {
+      "name": "木の古代龍・アノマロカリス",
+      "cardId": 2576,
+      "attr": 2,
+      "skills": [
+       {
+        "name": "碧きカンブリア",
+        "pre": true,
+        "damage": 3330000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       },
+       {
+        "name": "通常攻撃",
+        "pre": false,
+        "damage": 3330000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     },
+     {
+      "name": "雷の古代龍・アンモナイト",
+      "cardId": 2578,
+      "attr": 3,
+      "skills": [
+       {
+        "name": "通常攻撃",
+        "pre": false,
+        "damage": 3330000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "5F",
+    "enemies": [
+     {
+      "name": "イエローキーパー",
+      "cardId": 2587,
+      "attr": 3,
+      "skills": [
+       {
+        "name": "サンダーエナジー + キャプチャーバインド",
+        "pre": true,
+        "damage": 12000000,
+        "hits": 2,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "6,000,000×2"
+       },
+       {
+        "name": "キリングビースト",
+        "pre": false,
+        "damage": 12120000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "2回目行動"
+       },
+       {
+        "name": "サンダースフィア",
+        "pre": false,
+        "damage": 14400000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "3回目行動以降・攻撃力1.2倍時"
+       }
+      ]
+     },
+     {
+      "name": "パープルキーパー",
+      "cardId": 2589,
+      "attr": 4,
+      "skills": [
+       {
+        "name": "シャドウエナジー + パワーサイレント",
+        "pre": true,
+        "damage": 12000000,
+        "hits": 2,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "6,000,000×2"
+       },
+       {
+        "name": "キリングビースト",
+        "pre": false,
+        "damage": 12120000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "2回目行動"
+       },
+       {
+        "name": "シャドウスフィア",
+        "pre": false,
+        "damage": 14400000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "3回目行動以降・攻撃力1.2倍時"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "7F",
+    "enemies": [
+     {
+      "name": "アワりん",
+      "cardId": 38,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "ぶくぶく",
+        "pre": false,
+        "damage": 3000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     },
+     {
+      "name": "浮標の鍵の継承者・クラミィ",
+      "cardId": 10424,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "アンダーブレラ + クーラー・シャイン",
+        "pre": true,
+        "damage": 10000000,
+        "hits": 2,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "5,000,000×2"
+       },
+       {
+        "name": "テンタクルーエル",
+        "pre": false,
+        "damage": 10500000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "残り1体の時、初回"
+       },
+       {
+        "name": "テンタクルラッシュ",
+        "pre": false,
+        "damage": 14000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "残り1体の時、2回目以降"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "8F",
+    "enemies": [
+     {
+      "name": "マリンスノー",
+      "cardId": 12641,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "フレッシュハートフレーバー",
+        "pre": true,
+        "damage": 14000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "9F",
+    "enemies": [
+     {
+      "name": "ニムエ",
+      "cardId": 6086,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "水の帳",
+        "pre": true,
+        "damage": 15000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       },
+       {
+        "name": "マインドレイク",
+        "pre": false,
+        "damage": 15150000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "初回行動"
+       },
+       {
+        "name": "マインドレイク",
+        "pre": false,
+        "damage": 15300000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "2回目行動"
+       },
+       {
+        "name": "マインドレイク",
+        "pre": false,
+        "damage": 15450000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "3回目行動"
+       },
+       {
+        "name": "剣の解放",
+        "pre": false,
+        "damage": 15750000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "4回目行動"
+       },
+       {
+        "name": "ヘイトリッドヴォーテックス",
+        "pre": false,
+        "damage": 21000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "5回目行動以降・攻撃力1.4倍時"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "10F",
+    "enemies": [
+     {
+      "name": "絶海龍・ウェルドール",
+      "cardId": 2940,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "鯨呑",
+        "pre": true,
+        "damage": 400,
+        "hits": 1,
+        "attr": -1,
+        "type": "gravity",
+        "tags": [],
+        "note": "现在HP400%割合（需要根性/无效）"
+       },
+       {
+        "name": "まるのみっ！",
+        "pre": false,
+        "damage": 17000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     },
+     {
+      "name": "緑冥龍・ラグウェル",
+      "cardId": 2941,
+      "attr": 2,
+      "skills": [
+       {
+        "name": "地獄の門",
+        "pre": true,
+        "damage": 400,
+        "hits": 1,
+        "attr": -1,
+        "type": "gravity",
+        "tags": [],
+        "note": "现在HP400%割合（需要根性/无效）"
+       },
+       {
+        "name": "第四界　貪欲の地獄",
+        "pre": false,
+        "damage": 17000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "初回行動"
+       },
+       {
+        "name": "第六界　異端の地獄",
+        "pre": false,
+        "damage": 18360000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "2回目行動・攻撃力1.2倍時"
+       },
+       {
+        "name": "第七界　暴力の地獄",
+        "pre": false,
+        "damage": 20196000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "3回目行動・攻撃力1.2倍時"
+       },
+       {
+        "name": "第九界　裏切の地獄",
+        "pre": false,
+        "damage": 20400000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "4回目行動・攻撃力1.2倍時"
+       },
+       {
+        "name": "最終界　嘆きの地獄",
+        "pre": false,
+        "damage": 21216000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "5回目行動以降・攻撃力1.2倍時"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "11F",
+    "enemies": [
+     {
+      "name": "閃烈の蛸機帝・オクトレイ",
+      "cardId": 11461,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "フルメタルアーマー + リミットブレイク",
+        "pre": false,
+        "damage": 18000000,
+        "hits": 2,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "9,000,000×2"
+       },
+       {
+        "name": "テンタクルキャノン",
+        "pre": false,
+        "damage": 54000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "初回行動・攻撃力3倍時"
+       },
+       {
+        "name": "オクトマリンシュート",
+        "pre": false,
+        "damage": 19800000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "12F",
+    "enemies": [
+     {
+      "name": "天蝎機・メタルアンタレス",
+      "cardId": 9997,
+      "attr": 0,
+      "skills": [
+       {
+        "name": "天蝎機の躍進",
+        "pre": true,
+        "damage": 6000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "PTHP半減状態で受ける"
+       },
+       {
+        "name": "天蝎機の暴走",
+        "pre": false,
+        "damage": 30000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "HP50%超時／対策なしの場合、先制でPTHP半減状態で受ける可能性あり"
+       },
+       {
+        "name": "天蝎機の怪光",
+        "pre": false,
+        "damage": 20200000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "HP50%以下1回"
+       },
+       {
+        "name": "スコーピオブラスト",
+        "pre": false,
+        "damage": 20400000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     },
+     {
+      "name": "巨蟹機・メタルアクベンス",
+      "cardId": 10203,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "巨蟹機の躍進",
+        "pre": true,
+        "damage": 6000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "PTHP半減状態で受ける"
+       },
+       {
+        "name": "巨蟹機の暴走",
+        "pre": false,
+        "damage": 30000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "HP50%超時／対策なしの場合、先制でPTHP半減状態で受ける可能性あり"
+       },
+       {
+        "name": "巨蟹機の怪光",
+        "pre": false,
+        "damage": 20200000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "HP50%以下1回／対策なしの場合、先制でPTHP半減状態で受ける可能性あり"
+       },
+       {
+        "name": "キャンサーブラスト",
+        "pre": false,
+        "damage": 20400000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "13F",
+    "enemies": [
+     {
+      "name": "我乱童子の超越者・キオ",
+      "cardId": 13734,
+      "attr": 3,
+      "skills": [
+       {
+        "name": "我乱童子の剣舞",
+        "pre": true,
+        "damage": 21000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       },
+       {
+        "name": "破刃",
+        "pre": false,
+        "damage": 22050000,
+        "hits": 1,
+        "attr": 1,
+        "type": "normal",
+        "tags": [],
+        "note": "HP50%以下1回・副属性"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "14F",
+    "enemies": [
+     {
+      "name": "珊瑚龍王・コーラリオン",
+      "cardId": 14224,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "コーラルプレッシャー",
+        "pre": true,
+        "damage": 21780000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       },
+       {
+        "name": "ウォッシュブレス",
+        "pre": false,
+        "damage": 22440000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "BOSS",
+    "enemies": [
+     {
+      "name": "蒼海の珊瑚龍王・コーラリオン",
+      "cardId": 14225,
+      "attr": 1,
+      "skills": [
+       {
+        "name": "パワーハウリング",
+        "pre": true,
+        "damage": 24000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       },
+       {
+        "name": "コーラルストリーム",
+        "pre": false,
+        "damage": 60000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": "初回行動・攻撃力2.5倍時"
+       },
+       {
+        "name": "コーラルリムーブ",
+        "pre": false,
+        "damage": 24000000,
+        "hits": 1,
+        "attr": 0,
+        "type": "normal",
+        "tags": [],
+        "note": "HP50%以下1回・副属性"
+       },
+       {
+        "name": "コーラルブレス",
+        "pre": false,
+        "damage": 24000000,
+        "hits": 1,
+        "attr": -1,
+        "type": "normal",
+        "tags": [],
+        "note": ""
+       }
+      ]
+     }
+    ],
+    "stage": 15
+   }
+  ]
+ }
+}

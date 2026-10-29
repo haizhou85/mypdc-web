@@ -51,6 +51,14 @@
 		const s = getAttrShieldAwokenReduceScales(team).find(x => (x.attrs >> attr) & 1);
 		return s ? s.scale : 0;
 	}
+	// 心L（L盾觉醒 59）：拉出心L时，每个觉醒减伤 5%
+	function heartLCount(team) {
+		if (state.awokenBind || typeof awokenCountInTeam !== 'function') return 0;
+		try {
+			return team ? awokenCountInTeam(team, 59, solo, teamsCount)
+				: (formation?.teams || []).reduce((a, t) => a + awokenCountInTeam(t, 59, solo, teamsCount), 0);
+		} catch (e) { return 0; }
+	}
 	// 熟成：按层数（5F 起 ×1.5、10F 起 ×2）重新计算队伍 HP，返回相对当前页面设置的倍率 [正常, 觉醒无效]
 	function floorStage(fl) {
 		if (fl.stage > 0) return fl.stage;
@@ -62,7 +70,8 @@
 	function stageRatio(ti, stage) {
 		if (teamsCount === 2 || typeof countTeamHp !== 'function') return [1, 1];
 		const brokens = state.brokens || 0;
-		const key = ti + ':' + stage + ':' + brokens;
+		const benefit = cur?.data?.benefit || 0; // 阴阳加护：1 阳、2 阴（关卡资料里设定）
+		const key = ti + ':' + stage + ':' + brokens + ':' + benefit;
 		if (stageCache.has(key)) return stageCache.get(key);
 		let res = [1, 1];
 		const team = formation.teams[ti];
@@ -71,9 +80,10 @@
 		if (team && dge) {
 				const [l1, l2] = leaderIds(ti);
 				const sum = (t, noAw) => countTeamHp(t, l1, l2, solo, noAw).reduce((a, b) => a + b, 0);
-				const saved = dge.stage, savedB = dge.brokens;
+				const saved = dge.stage, savedB = dge.brokens, savedG = dge.benefit;
 				try {
 					dge.stage = stage;
+					dge.benefit = benefit;
 					dge.brokens = brokens; // 部位破坏数（面板里选择）
 					const members = team[0].map((m, i) => {
 						if (!m || !(m.id > 0)) return m;
@@ -85,10 +95,10 @@
 						return c;
 					});
 					const t2 = [members, ...team.slice(1)];
-					dge.stage = saved; dge.brokens = savedB;
+					dge.stage = saved; dge.brokens = savedB; dge.benefit = savedG;
 					const b0 = sum(team, false), b1 = sum(team, true);
 					res = [b0 > 0 ? sum(t2, false) / b0 : 1, b1 > 0 ? sum(t2, true) / b1 : 1];
-				} catch (e) { console.error(e); } finally { dge.stage = saved; dge.brokens = savedB; }
+				} catch (e) { console.error(e); } finally { dge.stage = saved; dge.brokens = savedB; dge.benefit = savedG; }
 			}
 		};
 		if (MyPDC.skillUse?.withAttr) MyPDC.skillUse.withAttr(run); else run();
@@ -127,6 +137,7 @@
 			if (on) keep *= 1 - s.scale;
 		});
 		keep *= 1 - Math.min(1, attrShieldSum(info.team, attr) + (extraAttr || 0));
+		if (state.heartL) keep *= 1 - Math.min(1, 0.05 * heartLCount(info.team));
 		const sk = info.use.shield;
 		if (sk && (sk.mask >> attr) & 1 && (sk.prob >= 1 || state.includeProb)) keep *= 1 - sk.rate;
 		return keep;
@@ -219,6 +230,8 @@
 				Array.from({ length: n }, (_, i) => el('option', { value: i, selected: state.teamIdx === i }, `队伍${i + 1}`)))) : null,
 			toggle('awokenBind', '觉醒无效'),
 			toggle('includeProb', '计入概率减伤', '例如“50%几率减伤”的队长技、概率盾'),
+			el('label', { title: '拉出一个心L：每个 L盾觉醒减伤 5%' }, el('input', { type: 'checkbox', checked: !!state.heartL, onchange: e => set('heartL', e.target.checked) }),
+				` 心L减伤（${heartLCount(teamsCount === 2 ? null : formation?.teams?.[Math.min(state.teamIdx, (formation?.teams?.length || 1) - 1)])}个）`),
 			el('label', null, '受击前HP ', el('input', { type: 'number', min: 1, max: 100, value: state.startHp, style: 'width:3.5em',
 				onchange: e => set('startHp', Math.min(100, Math.max(1, +e.target.value || 100))) }), '%')));
 		if (!info) {
@@ -252,6 +265,9 @@
 	function renderDungeon(data) {
 		const base = teamInfo(1);
 		const wrap = el('div', { class: 'mypdc-dg' });
+		if (data.benefit) wrap.append(el('div', { class: 'mypdc-dg-benefit' },
+			el('span', { class: 'awoken-icon', 'data-awoken-icon': data.benefit === 2 ? 129 : 128 }),
+			data.benefit === 2 ? '陰の加護（阴之加护）' : '陽の加護（阳之加护）', el('span', { class: 'mypdc-dg-skill-note' }, '有这个觉醒的队员 HP ×2，已计入')));
 		if (cur?.data?.note) wrap.append(el('div', { class: 'mypdc-dg-note' }, cur.data.note));
 		(data.floors || []).forEach(fl => (fl.enemies || []).forEach(en => {
 			const info = teamInfo(floorStage(fl));
@@ -305,7 +321,9 @@
 		box.append(el('div', { class: 'mypdc-row' },
 			el('label', null, '关卡名 ', inp(d, 'name', { style: 'width:16em' })),
 			el('label', null, '服务器 ', el('select', { onchange: e => { d.server = e.target.value; } },
-				[['ja', '日服'], ['en', '美服'], ['ko', '韩服']].map(([v, t]) => el('option', { value: v, selected: d.server === v }, t))))),
+				[['ja', '日服'], ['en', '美服'], ['ko', '韩服']].map(([v, t]) => el('option', { value: v, selected: d.server === v }, t)))),
+			el('label', null, '加护 ', el('select', { onchange: e => { data.benefit = +e.target.value || 0; } },
+				[[0, '无'], [1, '陽の加護'], [2, '陰の加護']].map(([v, t]) => el('option', { value: v, selected: (data.benefit || 0) === v }, t))))),
 			el('label', { class: 'mypdc-dg-field' }, '关卡说明 ', el('textarea', { rows: 2, oninput: e => { data.note = e.target.value; } }, data.note || '')));
 
 		data.floors.forEach((fl, fi) => {

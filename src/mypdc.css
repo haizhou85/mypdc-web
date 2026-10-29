@@ -742,3 +742,5 @@ label[for="show-member-awoken"]::after { content: "队员觉醒" !important; }
 .formation-box .team-total-info-count::before { flex-basis: 100%; }
 /* 关卡伤害按钮放大 1.5 倍 */
 .mypdc-open-btn.mypdc-open-inline { font-size: 21px !important; padding: 8px 18px !important; border-radius: 24px !important; }
+.mypdc-dg-benefit { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0; font-weight: bold; }
+.mypdc-dg-benefit .awoken-icon { width: 28px; height: 28px; flex: none; }
