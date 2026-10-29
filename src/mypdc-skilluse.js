@@ -344,9 +344,18 @@
 			const evo = (Array.isArray(parsed) ? parsed : [parsed]).find(n => n?.kind === SkillKinds.EvolvedSkills);
 			const ids = Skills[card.activeSkillId]?.params || [];
 			if (evo && evo.skills?.length) {
-				if (evo.loop) { // 循环：CD 相加，上限取各段里最大的
-					const all = evo.skills.map(st => capEffects(st)).flat();
-					res = { effects: all.length ? [all.reduce((a, b) => (b.cap > a.cap ? b : a))] : [], cd: ids.slice(0, evo.skills.length).reduce((s, id) => s + stageCd(id), 0) };
+				if (evo.loop) { // 循环：CD 相加；每一段的上限突破各自覆盖 min(持续, 该段CD) 回合，按上限高低折算后相加
+					const cds = ids.slice(0, evo.skills.length).map(stageCd);
+					const per = evo.skills.map((st, k) => {
+						const list = capEffects(st);
+						return list.length ? { e: list.reduce((a, b) => (b.cap > a.cap ? b : a)), cd: cds[k] || 1 } : null;
+					}).filter(Boolean);
+					const cd = cds.reduce((s, x) => s + x, 0) || 1;
+					if (per.length) {
+						const top = per.reduce((a, b) => (b.e.cap > a.e.cap ? b : a)).e;
+						const turns = per.reduce((s, x) => s + Math.min(x.e.turns, x.cd) * x.e.cap / top.cap, 0);
+						res = { effects: [{ ...top, turns }], cd };
+					} else res = { effects: [], cd };
 				} else { // 多段：按最后一段
 					const last = evo.skills.length - 1;
 					res = { effects: capEffects(evo.skills[last]), cd: stageCd(ids[last]) };
