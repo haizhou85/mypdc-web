@@ -447,7 +447,7 @@
 	MyPDC.avgCap = { teamCaps, skillCaps, update };
 })();
 
-// 队员稀有度和 CD：能力值下方一行，例如“8★ CD5”；多阶段技能取最小 CD
+// 队员稀有度和 CD：能力值下方一行，例如“8★ CD5～10”（最短～最长）；多阶段技能取各阶段最短 / 最长
 (function () {
 	const { el, load, save, teamStats } = MyPDC;
 	const KEY = 'show-rarecd';
@@ -461,6 +461,16 @@
 		}
 		return cdOf(sk, member?.skilllevel);
 	}
+	// 最长 CD：技能 1 级时；多阶段技能取各阶段里最长的
+	function maxCd(card) {
+		const sk = Skills[card?.activeSkillId];
+		if (!sk) return null;
+		if ((sk.type === 232 || sk.type === 233) && Array.isArray(sk.params)) {
+			const cds = sk.params.map(id => Skills[id]).filter(Boolean).map(s => s.initialCooldown);
+			if (cds.length) return Math.max(...cds);
+		}
+		return sk.initialCooldown;
+	}
 	function update(ti) {
 		const big = typeof teamBigBoxs !== 'undefined' ? teamBigBoxs[ti] : null;
 		const team = formation?.teams?.[ti];
@@ -473,8 +483,9 @@
 			const card = m?.id > 0 ? Cards[m.id] : null;
 			d.innerHTML = '';
 			if (!card) return;
-			const cd = minCd(card, m);
-			d.append(el('span', { class: 'r' }, `${card.rarity}★`), cd ? `CD${cd}` : '');
+			const cd = minCd(card, m), mx = maxCd(card);
+			d.title = '技能 CD：最短（满级）～最长（1级）';
+			d.append(el('span', { class: 'r' }, `${card.rarity}★`), cd ? `CD${cd}` + (mx > cd ? `～${mx}` : '') : '');
 		});
 	}
 	window.addEventListener('load', () => {
