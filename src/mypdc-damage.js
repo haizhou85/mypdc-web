@@ -112,14 +112,18 @@
 	}
 
 	// ---------- 队伍资料 ----------
-	function memberInfo(team, i, awokenBind) {
+	function memberInfo(team, i, awokenBind, imparts = []) {
 		const m = team[0][i], a = team[1][i];
 		if (!m || !(m.id > 0) || !Cards[m.id]) return null;
 		const card = Cards[m.id];
 		let attrs = [...card.attrs], types = [...card.types];
 		try { const at = m.getAttrsTypesWithWeapon(a); if (at) { attrs = at.attrs; types = at.types; } } catch (e) { /* 用卡片本身 */ }
 		let awk = [];
-		if (!awokenBind) { try { awk = m.effectiveAwokens(a) || []; } catch (e) { awk = card.awakenings.slice(0, m.awoken); } }
+		if (!awokenBind) {
+			try { awk = m.effectiveAwokens(a) || []; } catch (e) { awk = card.awakenings.slice(0, m.awoken); }
+			// 队长技赋予的觉醒（按属性 / 类型）
+			imparts.forEach(n => { if (memberMatches(n, { attrs, types })) awk = awk.concat(listOf(n.awakenings).filter(x => x > 0)); });
+		}
 		const ab = calculateAbility(m, a, solo, teamsCount);
 		const pick = awokenBind ? 1 : 0;
 		return {
@@ -372,10 +376,11 @@
 		const D = MyPDC.dungeon;
 		const dstate = D.state;
 		const awokenBind = !!dstate.awokenBind;
-		const mems = [0, 1, 2, 3, 4, 5].map(i => memberInfo(team, i, awokenBind));
 		const [l1, l2] = leaderIds(ti);
 		const leaders = [l1, l2].map(id => ({ id, nodes: leaderNodes(id) }));
 		const allNodes = leaders.flatMap(l => l.nodes);
+		const imparts = allNodes.filter(n => n.kind === 'impart-awakenings');
+		const mems = [0, 1, 2, 3, 4, 5].map(i => memberInfo(team, i, awokenBind, imparts));
 		const ctx = Object.assign({}, ctxBase, { mems, unknown: new Set(), hpPct: dstate.startHp || 100, buffs: atkBuffs(team) });
 
 		const { W, H, minLen } = ctx;
@@ -504,7 +509,6 @@
 		// 判断不了的队长技
 		allNodes.forEach(n => {
 			if (n.kind === 'follow-attack') ctx.unknown.add('攻击后追打（按攻击力倍数）');
-			if (n.kind === 'impart-awakenings') ctx.unknown.add('队长技赋予觉醒');
 		});
 		let hpFollow = 0; // 15 连击以上：每个持有竖列觉醒且该色竖列发动的队员追打敌人 HP 2.5%
 		if (totalCombos >= 15) mems.forEach(mm => {
