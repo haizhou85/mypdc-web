@@ -191,6 +191,8 @@
 		}
 	}
 
+	// 队长技的连击条件：盘面连击 + 加算连击（先算加连击时只用盘面连击）
+	const comboN = ctx => (ctx.comboTotal ?? ctx.bs.count);
 	// 判断条件。返回 true / false；判断不了的记到 ctx.unknown
 	function condOK(cond, ctx, node) {
 		if (!cond) return true;
@@ -201,14 +203,14 @@
 				case 'useSkill': if (!st.useSkill) return false; break;
 				case 'multiplayer': if (teamsCount !== 2) return false; break;
 				case 'prob': break; // 按发动计算
-				case 'combos': if (!(bs.count >= v.min)) return false; break;
+				case 'combos': if (!(comboN(ctx) >= v.min)) return false; break;
 				case 'attrs': if (!(listOf(v.attrs).filter(a => bs.colors.has(a)).length >= v.min)) return false; break;
 				case 'LShape': if (!bs.combos.some(cb => cb.shape === 'L' && listOf(v.attrs).includes(cb.color))) return false; break;
 				case 'heal': if (ctx.heal == null) return false; if (!(ctx.heal >= v.min)) return false; break;
 				case 'stage': if (!(ctx.stage >= (v.min || 0) && (!v.max || ctx.stage <= v.max))) return false; break;
 				case 'enemyAttr': if (!ctx.enemy || !listOf(v.attrs).includes(ctx.enemy.attr)) return false; break;
 				case 'exact': {
-					if (v.type === 'combo') { if (bs.count !== v.value) return false; }
+					if (v.type === 'combo') { if (comboN(ctx) !== v.value) return false; }
 					else if (v.type === 'match-length') {
 						if (v.attrs === 'enhanced') return false; // 不考虑强化珠
 						const hit = bs.combos.filter(cb => cb.n === v.value && (isAll(v.attrs) || listOf(v.attrs).includes(cb.color)));
@@ -258,7 +260,7 @@
 		else switch (v.kind) {
 			case 'mul': f = { atk: v.atk ?? 1, rcv: v.rcv ?? 1 }; break;
 			case 'scale-attrs': f = scaleVal(v, listOf(v.attrs).filter(a => bs.colors.has(a)).length); break;
-			case 'scale-combos': f = scaleVal(v, bs.count); break;
+			case 'scale-combos': f = scaleVal(v, comboN(ctx)); break;
 			case 'scale-match-len': {
 				const longest = a => Math.max(0, ...bs.combos.filter(cb => cb.color === a).map(cb => cb.n));
 				const ls = listOf(v.attrs).map(longest);
@@ -402,6 +404,7 @@
 		const cb = ctx.buffs.find(x => x.kind === 'combo' && x.text === st.comboBuff);
 		if (cb) { addCombo += cb.combo; comboFrom.push(`技能+${cb.combo}`); }
 		const totalCombos = bs.count + addCombo;
+		ctx.comboTotal = totalCombos;
 		const comboMul = totalCombos > 0 ? 1 + 0.25 * (totalCombos - 1) : 0;
 
 		// 回复量（用于“回复○万以上”这类条件）
