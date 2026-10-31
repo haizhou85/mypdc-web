@@ -393,6 +393,12 @@
 				if (a?.kind === 'follow-attack-fixed') fixedFollow += a.value?.value || 0;
 			});
 		});
+		// 竖列觉醒（火竖～暗竖）：每消一列 +1 连击（不随觉醒个数增加）
+		const teamHas = id => mems.some(mm => mm && mm.count(id) > 0);
+		[0, 1, 2, 3, 4].forEach(c => {
+			const cols = bs.by[c].filter(x => x.colCount > 0).length;
+			if (cols && teamHas(AW.COLUMN[c])) { addCombo += cols; comboFrom.push(`${ATTR_NAMES[c]}竖+${cols}`); }
+		});
 		const cb = ctx.buffs.find(x => x.kind === 'combo' && x.text === st.comboBuff);
 		if (cb) { addCombo += cb.combo; comboFrom.push(`技能+${cb.combo}`); }
 		const totalCombos = bs.count + addCombo;
@@ -459,6 +465,12 @@
 				let pairOn = false;
 				AW.PAIRS.forEach(([id, a, b]) => { if (bs.by[a].length && bs.by[b].length && mem.count(id)) { pw(id, 50); pairOn = true; } });
 				if (bs.by[5].some(cb => cb.shape === 'L')) pw(AW.HEART_L, 3);
+				// 竖列觉醒：同色竖一列每消一列 ×7（每个觉醒各乘一次）
+				[0, 1, 2, 3, 4].forEach(c => {
+					const cols = bs.by[c].filter(x => x.colCount > 0).length;
+					const n = mem.count(AW.COLUMN[c]);
+					if (cols && n) awk *= 7 ** (cols * n);
+				});
 				const team = rowMul[attr] * attrComboMul[attr];
 				// 杀手（觉醒 5 倍 / 特殊类型 3 倍，潜觉 1.5 倍）
 				let killer = 1;
@@ -491,7 +503,12 @@
 			if (n.kind === 'follow-attack') ctx.unknown.add('攻击后追打（按攻击力倍数）');
 			if (n.kind === 'impart-awakenings') ctx.unknown.add('队长技赋予觉醒');
 		});
-		return { bs, res, rows, addCombo, comboFrom, totalCombos, comboMul, fixedFollow, heal, unknown: [...ctx.unknown], leaders };
+		let hpFollow = 0; // 15 连击以上：每个持有竖列觉醒且该色竖列发动的队员追打敌人 HP 2.5%
+		if (totalCombos >= 15) mems.forEach(mm => {
+			if (!mm) return;
+			if ([0, 1, 2, 3, 4].some(c => mm.count(AW.COLUMN[c]) > 0 && bs.by[c].some(x => x.colCount > 0))) hpFollow++;
+		});
+		return { bs, res, rows, addCombo, comboFrom, hpFollow, totalCombos, comboMul, fixedFollow, heal, unknown: [...ctx.unknown], leaders };
 	}
 
 	// ---------- 界面 ----------
@@ -628,6 +645,7 @@
 		inner.append(table);
 		inner.append(el('div', { class: 'mypdc-dmg-total' }, el('b', { title: fmt(total) }, `合计 ${big(total)}`),
 			result.fixedFollow ? ` ＋ 固定追打 ${fmt(result.fixedFollow)}` : '',
+			result.hpFollow ? ` ＋ 追打 敌人HP ${+(result.hpFollow * 2.5).toFixed(1)}%（${result.hpFollow}只竖列觉醒）` : '',
 			tgt ? el('span', { class: 'mypdc-dmg-skill-note' }, ` 对 ${tgt.text}（已计入属性克制和杀手）`) : ''));
 		const notes = ['敌人防御、强化珠、超追加攻击、潜觉上限解放等暂未计入；鼠标停在数字上可以看每一步的倍率。'];
 		if (result.unknown.length) notes.unshift('有判断不了的队长技条件（按未满足计算）：' + result.unknown.join('、'));

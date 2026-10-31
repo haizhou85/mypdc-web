@@ -507,3 +507,19 @@ const MyPDC = (function () {
 		return sure(Skills[card.activeSkillId], skillTypes, 0);
 	};
 })();
+
+// 上游的队长减伤没有 285 型（[○縦消し攻撃]发动时减伤，例如陸孫、壬氏）：补上，和其他“觉醒发动”类一样默认算触发
+(function () {
+	if (typeof getReduceScales !== 'function' || typeof getCardLeaderSkills !== 'function') return;
+	const orig = getReduceScales;
+	window.getReduceScales = function (leaderid) {
+		const list = orig.apply(this, arguments) || [];
+		try {
+			getCardLeaderSkills(Cards[leaderid], [285]).forEach(ls => {
+				const pct = ls?.params?.[2] || 0;
+				if (pct > 0) list.push(new ShieldReduce(pct / 100));
+			});
+		} catch (e) { /* 忽略 */ }
+		return list;
+	};
+})();
