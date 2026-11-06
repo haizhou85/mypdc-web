@@ -50,6 +50,13 @@
 			['敌→光', 'custom:enemy-attr-3', 3],
 			['敌→暗', 'custom:enemy-attr-4', 4],
 		]],
+		['先制条件', [
+			['任意', 'custom:proviso-any'],
+			['敌火', 'custom:proviso-enemy-0', 0], ['敌水', 'custom:proviso-enemy-1', 1], ['敌木', 'custom:proviso-enemy-2', 2],
+			['敌光', 'custom:proviso-enemy-3', 3], ['敌暗', 'custom:proviso-enemy-4', 4],
+			['降火', 'custom:proviso-drop-0', 0], ['降水', 'custom:proviso-drop-1', 1], ['降木', 'custom:proviso-drop-2', 2],
+			['降光', 'custom:proviso-drop-3', 3], ['降暗', 'custom:proviso-drop-4', 4], ['降心', 'custom:proviso-drop-5', 5],
+		]],
 		['转己方属性', [
 			['任意', 'custom:self-attr-any'],
 			['→火', 'custom:self-attr-0', 0],
@@ -156,6 +163,31 @@
 		return res;
 	}
 
+	// 先制条件：技能（或其中某一段）要在“敌人是某属性”或“某色珠掉落率提高”时才能用 / 才发动
+	const provisoCache = new Map();
+	function provisoOf(card) {
+		const none = { enemy: new Set(), drop: new Set() };
+		if (!skillsReady() || !card.activeSkillId) return none;
+		if (provisoCache.has(card.id)) return provisoCache.get(card.id);
+		const res = { enemy: new Set(), drop: new Set() };
+		const take = cond => {
+			if (!cond || typeof cond !== 'object') return;
+			if (cond.enemyAttr) (cond.enemyAttr.attrs || []).forEach(a => res.enemy.add(a));
+			const st = cond.stateIsActive;
+			if (st && st.type === 'orb-drop-increase') (st.indexes || []).forEach(a => res.drop.add(a));
+		};
+		const walk = n => {
+			if (Array.isArray(n)) { n.forEach(walk); return; }
+			if (!n || typeof n !== 'object') return;
+			if (n.kind === SkillKinds.SkillProviso) take(n.cond);
+			if (n.condition) take(n.condition);
+			for (const v of Object.values(n)) if (v && typeof v === 'object') walk(v);
+		};
+		try { walk(skillParser(card.activeSkillId)); } catch (e) { /* 忽略 */ }
+		provisoCache.set(card.id, res);
+		return res;
+	}
+
 	// HP上限提升的最大倍数、伤害上限提升的最大值（技能里有多个时取最大）
 	const capCache = new Map();
 	function capsOf(card) {
@@ -182,7 +214,10 @@
 		'shield-any': cards => cards.filter(c => shieldOf(c) > 0),
 		'maxhp-up': cards => cards.filter(c => { const sk = activeSkillOf(c, [237]); return sk && sk.params[1] > 100; }),
 		'enemy-attr-any': cards => cards.filter(c => enemyAttrOf(c) !== null),
+		'proviso-any': cards => cards.filter(c => { const r = provisoOf(c); return r.enemy.size > 0 || r.drop.size > 0; }),
 	};
+	for (let a = 0; a < 5; a++) CUSTOM_FILTERS['proviso-enemy-' + a] = cards => cards.filter(c => provisoOf(c).enemy.has(a));
+	for (let a = 0; a < 6; a++) CUSTOM_FILTERS['proviso-drop-' + a] = cards => cards.filter(c => provisoOf(c).drop.has(a));
 	for (let a = 0; a < 5; a++) CUSTOM_FILTERS['enemy-attr-' + a] = cards => cards.filter(c => enemyAttrOf(c) === a);
 	for (let a = 0; a < 5; a++) CUSTOM_FILTERS['self-attr-' + a] = cards => cards.filter(c => selfAttrOf(c).attrs.has(a));
 	for (let a = 0; a <= 9; a++) CUSTOM_FILTERS['orb-' + a] = cards => cards.filter(c => orbColorsOf(c).has(a));
