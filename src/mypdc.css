@@ -798,3 +798,5 @@ label[for="show-member-awoken"]::after { content: "队员觉醒" !important; }
 #qr-code-frame .qr-box, #qr-code-frame .qr-box img, #qr-code-frame .qr-box svg { max-width: 100%; height: auto; }
 #qr-code-frame .qr-data-type-ul { flex-wrap: wrap; }
 #qr-code-frame .string-input, #qr-code-frame .string-output { max-width: 100%; box-sizing: border-box; }
+/* 弹窗要盖在电脑布局的固定工具栏上面 */
+body.mypdc-desk .mask { z-index: 1000 !important; }

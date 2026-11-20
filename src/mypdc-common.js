@@ -533,3 +533,49 @@ window.addEventListener('load', () => setTimeout(() => {
 		if (href && /[?&](d|data)=/.test(href)) location.href = href;
 	}).observe(a, { attributes: true, attributeFilter: ['href'] });
 }, 500));
+
+// 读取二维码图片：先用 zxing-wasm（zxing-cpp，能认出 PDC 编队图里又小又密的二维码），失败再用原来的识别
+(function () {
+	const VER = '3.1.6';
+	let loading = null;
+	function loadZXing() {
+		if (window.ZXingWASM) return Promise.resolve(window.ZXingWASM);
+		return loading || (loading = new Promise((resolve, reject) => {
+			const s = document.createElement('script');
+			s.src = 'zxing-reader.js?v=' + VER;
+			s.onload = () => {
+				try {
+					window.ZXingWASM.prepareZXingModule({
+						overrides: { locateFile: (p, prefix) => (p.endsWith('.wasm') ? new URL('zxing_reader.wasm?v=' + VER, location.href).href : prefix + p) },
+					});
+					resolve(window.ZXingWASM);
+				} catch (e) { reject(e); }
+			};
+			s.onerror = reject;
+			document.head.append(s);
+		}).catch(e => { loading = null; throw e; }));
+	}
+	document.addEventListener('change', async e => {
+		const input = e.target;
+		if (!input?.matches?.('#qr-code-frame .file-select')) return;
+		const file = input.files?.[0];
+		if (!file) return;
+		e.stopImmediatePropagation();
+		const frame = input.closest('#qr-code-frame');
+		const msg = frame.querySelector('.info .result-message');
+		if (msg) msg.textContent = '正在识别二维码…';
+		try {
+			const Z = await loadZXing();
+			const res = await Z.readBarcodes(file, { formats: ['QRCode'], tryHarder: true, maxNumberOfSymbols: 4 });
+			let text = (res || []).find(r => r.isValid && r.text)?.text;
+			if (!text) throw new Error('没有找到二维码');
+			if (text.startsWith('\u001a')) text = text.substring(1);
+			frame.querySelector('.string-input').value = text;
+			frame.querySelector('.read-string').click();
+		} catch (err) {
+			console.warn('zxing-wasm 识别失败，改用原来的识别', err);
+			if (msg) msg.textContent = '';
+			if (typeof input.onchange === 'function') input.onchange.call(input, e);
+		}
+	}, true);
+})();
