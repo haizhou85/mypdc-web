@@ -523,3 +523,13 @@ const MyPDC = (function () {
 		return list;
 	};
 })();
+
+// 二维码窗口：读到编队（本站或 PDC 格式）后直接载入，不用再点链接
+window.addEventListener('load', () => setTimeout(() => {
+	const a = document.querySelector('#qr-code-frame .formation-link-from-string a');
+	if (!a) return;
+	new MutationObserver(() => {
+		const href = a.getAttribute('href');
+		if (href && /[?&](d|data)=/.test(href)) location.href = href;
+	}).observe(a, { attributes: true, attributeFilter: ['href'] });
+}, 500));

@@ -505,7 +505,7 @@ html.mypdc-team-loading body { opacity: 0.3; pointer-events: none; }
 }
 
 /* ---------- 顶部控制栏精简 ---------- */
-#btn-qrcode, #btn-player-data, #datasource-updatetime { display: none !important; }
+#btn-player-data, #datasource-updatetime { display: none !important; }
 body.mypdc-compact-top label[for="languages"]::after, body.mypdc-compact-top label[for="datasource"]::after { content: none !important; }
 body.mypdc-compact-top .control-box > div, body.mypdc-compact-top .control-box .formation-control {
 	display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-bottom: 4px;
@@ -792,3 +792,9 @@ label[for="show-member-awoken"]::after { content: "队员觉醒" !important; }
 .mypdc-team-head.mypdc-team-hit { outline: 3px solid #ff9800; outline-offset: -1px; border-radius: 6px; }
 .mypdc-team-assisthit { align-items: center; gap: 4px; }
 .mypdc-team-assistlabel { font-size: 12px; color: #888; }
+/* 二维码（可读取 PDC 的编队二维码 / 字符串） */
+#btn-qrcode::after { content: "二维码" !important; }
+#qr-code-frame .mask-content { max-width: 100vw; box-sizing: border-box; overflow-x: hidden; }
+#qr-code-frame .qr-box, #qr-code-frame .qr-box img, #qr-code-frame .qr-box svg { max-width: 100%; height: auto; }
+#qr-code-frame .qr-data-type-ul { flex-wrap: wrap; }
+#qr-code-frame .string-input, #qr-code-frame .string-output { max-width: 100%; box-sizing: border-box; }
