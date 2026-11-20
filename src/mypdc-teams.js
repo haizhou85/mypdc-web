@@ -167,7 +167,8 @@
 	}
 
 	// ---------- 4) 队伍库列表 ----------
-	let lib, libTitle, libBody, listBox, moreBtn, searchInput, adminBox;
+	let lib, libTitle, libBody, listBox, moreBtn, searchInput, adminBox, pickBar;
+	const picked = new Map(); // 多选的队伍（跨搜索保留）
 	let items = [], more = false, loading = false, query = '';
 	let isAdmin = false;
 	let adminView = false; // 通过管理专属链接 #teams-admin 打开
@@ -184,10 +185,11 @@
 			el('div', { class: 'mypdc-team-toolbar' }, searchInput,
 				el('button', { type: 'button', onclick: e => copy(listUrl(), e.target) }, '🔗 复制队伍库链接')),
 			listBox, moreBtn);
+		pickBar = el('div', { class: 'mypdc-team-pickbar display-none' });
 		libTitle = el('h2', null, '📚 队伍库');
 		lib.append(
 			el('div', { class: 'mypdc-panel-head' }, libTitle, el('button', { type: 'button', onclick: closeLibrary }, '关闭')),
-			libBody);
+			libBody, pickBar);
 		document.body.append(lib);
 	}
 
@@ -244,6 +246,13 @@
 
 	function renderItem(t, hitIds = []) {
 		const row = el('div', { class: 'mypdc-team-item' });
+		// 多选（生成合集图片）：只支持单人队伍
+		const solo = !t.page || t.page === 'solo';
+		const pick = el('input', { type: 'checkbox', class: 'mypdc-team-pick', disabled: !solo, title: solo ? '选中后可生成合集图片' : '合集图片只支持单人队伍' });
+		pick.checked = picked.has(t.id);
+		pick.onclick = e => e.stopPropagation();
+		pick.onchange = () => { if (pick.checked) picked.set(t.id, t); else picked.delete(t.id); row.classList.toggle('mypdc-team-picked', pick.checked); updatePickBar(); };
+		row.classList.toggle('mypdc-team-picked', pick.checked);
 		// 列表里没有编队数据：点开时再读取完整队伍
 		const open = async () => {
 			if (row.classList.contains('mypdc-team-opening')) return;
@@ -285,6 +294,7 @@
 			actions.append(del);
 		}
 		row.append(
+			el('div', { class: 'mypdc-team-pickwrap', onclick: e => { e.stopPropagation(); if (e.target !== pick && !pick.disabled) { pick.checked = !pick.checked; pick.onchange(); } } }, pick),
 			heads,
 			el('div', { class: 'mypdc-team-info' },
 				el('div', { class: 'mypdc-team-title' }, el('span', { class: 'mypdc-team-id' }, `#${t.id}`), ' ', t.title),
@@ -294,6 +304,114 @@
 			actions);
 		row.onclick = open;
 		return row;
+	}
+
+	// ---------- 多选队伍 → 合集图片（每队：徽章 + 标题，辅助、潜觉、队员） ----------
+	function updatePickBar() {
+		if (!pickBar) return;
+		pickBar.innerHTML = '';
+		pickBar.classList.toggle('display-none', picked.size === 0);
+		if (!picked.size) return;
+		pickBar.append(
+			el('span', null, `已选 ${picked.size} 队`),
+			el('button', { type: 'button', class: 'mypdc-team-collage-btn', onclick: makeCollage }, '🖼 生成合集图片'),
+			el('button', { type: 'button', onclick: () => { picked.clear(); listBox.querySelectorAll('.mypdc-team-pick').forEach(c => { c.checked = false; }); listBox.querySelectorAll('.mypdc-team-picked').forEach(r => r.classList.remove('mypdc-team-picked')); updatePickBar(); } }, '清空'));
+	}
+	const sleep = ms => new Promise(r => setTimeout(r, ms));
+	async function waitImages(root) { // 等头像、潜觉等背景图载入
+		const urls = new Set();
+		root.querySelectorAll('*').forEach(n => {
+			const bg = getComputedStyle(n).backgroundImage;
+			(bg.match(/url\("?([^")]+)"?\)/g) || []).forEach(u => urls.add(u.replace(/^url\("?|"?\)$/g, '')));
+		});
+		await Promise.all([...urls].map(u => new Promise(res => { const i = new Image(); i.onload = i.onerror = res; i.src = u; })));
+	}
+	async function makeCollage() {
+		if (typeof html2canvas !== 'function' || typeof formation === 'undefined') return;
+		const list = [...picked.values()];
+		const overlay = el('div', { class: 'mypdc-collage-overlay' }, el('div', { class: 'mypdc-collage-msg' }, '准备中…'));
+		document.body.append(overlay);
+		const msg = overlay.firstChild;
+		const saved = JSON.parse(JSON.stringify(formation.getPdfQrObj(false).d));
+		const savedScroll = window.scrollY;
+		lib.classList.add('display-none');
+		MyPDC.capturing = true; // 手机上队伍区用 zoom 缩放，截图时先恢复原尺寸
+		document.body.classList.add('mypdc-capturing');
+		document.querySelectorAll('[style*="zoom"]').forEach(n => { if (n.closest('.formation-box') || n.matches('.formation-box')) n.style.zoom = ''; });
+		const scaler = document.querySelector('.mypdc-scale-inner');
+		const savedTransform = scaler?.style.transform;
+		if (scaler) scaler.style.transform = 'none';
+		const shots = [];
+		try {
+			for (let i = 0; i < list.length; i++) {
+				msg.textContent = `生成中 ${i + 1} / ${list.length}…`;
+				const t = await api(`/api/teams/${list[i].id}`);
+				formation.loadObj(t.data);
+				refreshAll(formation);
+				await sleep(150);
+				document.querySelectorAll('.formation-box, .formation-box [style*="zoom"]').forEach(n => { n.style.zoom = ''; });
+				const box = document.querySelector('.formation-box .team-bigbox .team-box');
+				const badge = document.querySelector('.formation-box .team-bigbox .team-badge');
+				await waitImages(box); if (badge) await waitImages(badge);
+				const opt = { backgroundColor: '#ffffff', scale: 2, logging: false };
+				const boxCanvas = await html2canvas(box, opt);
+				const badgeCanvas = badge && Number(formation.teams[0][2]) ? await html2canvas(badge, { ...opt, backgroundColor: null }) : null;
+				shots.push({ t, boxCanvas, badgeCanvas });
+			}
+			msg.textContent = '拼图中…';
+			// 竖排，手机宽度（750 像素宽）
+			const W = 750, PAD = 16, HEAD = 64;
+			const scaled = shots.map(s => ({ ...s, h: Math.round(s.boxCanvas.height * (W - PAD * 2) / s.boxCanvas.width) }));
+			const H = scaled.reduce((a, s) => a + HEAD + s.h + PAD * 2, 0) + PAD;
+			const c = document.createElement('canvas');
+			c.width = W; c.height = H;
+			const g = c.getContext('2d');
+			g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+			let y = PAD;
+			scaled.forEach((s, i) => {
+				if (i) { g.fillStyle = '#e6dccf'; g.fillRect(PAD, y - PAD, W - PAD * 2, 2); }
+				let x = PAD;
+				if (s.badgeCanvas) {
+					const bh = HEAD - 8, bw = Math.round(s.badgeCanvas.width * bh / s.badgeCanvas.height);
+					g.drawImage(s.badgeCanvas, x, y + 4, bw, bh);
+					x += bw + 12;
+				}
+				g.fillStyle = '#333';
+				g.font = 'bold 28px system-ui, -apple-system, "PingFang SC", "Microsoft Yahei", sans-serif';
+				g.textBaseline = 'middle';
+				const title = s.t.title || `#${s.t.id}`;
+				let text = title;
+				while (g.measureText(text).width > W - PAD - x && text.length > 1) text = text.slice(0, -1);
+				g.fillText(text === title ? text : text.slice(0, -1) + '…', x, y + HEAD / 2);
+				y += HEAD;
+				g.drawImage(s.boxCanvas, PAD, y, W - PAD * 2, s.h);
+				y += s.h + PAD * 2;
+			});
+			const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+			showCollage(URL.createObjectURL(blob), list.length);
+		} catch (e) {
+			window.alert('生成失败：' + e.message); // eslint-disable-line no-alert
+		} finally {
+			formation.loadObj(saved);
+			refreshAll(formation);
+			if (scaler) scaler.style.transform = savedTransform || '';
+			MyPDC.capturing = false;
+			document.body.classList.remove('mypdc-capturing');
+			window.dispatchEvent(new Event('resize'));
+			lib.classList.remove('display-none');
+			window.scrollTo(0, savedScroll);
+			overlay.remove();
+		}
+	}
+	function showCollage(url, n) {
+		const name = `队伍合集-${n}队.png`;
+		const box = el('div', { class: 'mypdc-collage-overlay mypdc-collage-result' },
+			el('div', { class: 'mypdc-collage-bar' },
+				el('a', { href: url, download: name, class: 'mypdc-collage-save' }, '⬇ 保存图片'),
+				el('span', { class: 'mypdc-collage-tip' }, '手机上也可以长按图片保存'),
+				el('button', { type: 'button', onclick: () => { box.remove(); URL.revokeObjectURL(url); } }, '关闭')),
+			el('div', { class: 'mypdc-collage-scroll' }, el('img', { src: url, alt: name })));
+		document.body.append(box);
 	}
 
 	// 管理：输入管理密码后可以删除

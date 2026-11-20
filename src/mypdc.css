@@ -800,3 +800,28 @@ label[for="show-member-awoken"]::after { content: "队员觉醒" !important; }
 #qr-code-frame .string-input, #qr-code-frame .string-output { max-width: 100%; box-sizing: border-box; }
 /* 弹窗要盖在电脑布局的固定工具栏上面 */
 body.mypdc-desk .mask { z-index: 1000 !important; }
+/* 队伍库多选 → 合集图片 */
+.mypdc-team-item { position: relative; }
+.mypdc-team-pickwrap { position: absolute; top: 6px; right: 6px; z-index: 2; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; cursor: pointer; }
+.mypdc-team-lib input.mypdc-team-pick { display: inline-block !important; appearance: auto !important; -webkit-appearance: checkbox !important; position: static !important; opacity: 1 !important; width: 22px; height: 22px; margin: 0; accent-color: #e0457b; }
+.mypdc-team-item.mypdc-team-picked { background: #fff3f7; outline: 2px solid #e0457b55; }
+.mypdc-team-pickbar {
+	position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+	padding: 10px 14px; background: #33261d; color: #fff; box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
+}
+.mypdc-team-pickbar button { padding: 6px 12px; border-radius: 16px; border: none; cursor: pointer; background: #fff !important; color: #333 !important; font-size: 14px; }
+.mypdc-team-pickbar .mypdc-team-collage-btn { background: #e0457b !important; color: #fff !important; font-weight: bold; }
+.mypdc-team-collage-btn { background: #e0457b; color: #fff; font-weight: bold; }
+.mypdc-collage-overlay {
+	position: fixed; inset: 0; z-index: 5000; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
+}
+.mypdc-collage-msg { background: #fff; padding: 16px 24px; border-radius: 12px; font-size: 16px; }
+.mypdc-collage-result { flex-direction: column; justify-content: flex-start; background: rgba(0,0,0,0.85); }
+.mypdc-collage-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; width: 100%; box-sizing: border-box; color: #fff; }
+.mypdc-collage-bar button, .mypdc-collage-save { padding: 6px 14px; border-radius: 16px; border: none; background: #fff; color: #333; text-decoration: none; font-size: 14px; }
+.mypdc-collage-save { background: #e0457b; color: #fff; font-weight: bold; }
+.mypdc-collage-tip { font-size: 12px; opacity: 0.8; flex: 1; }
+.mypdc-collage-scroll { overflow: auto; width: 100%; flex: 1; display: flex; justify-content: center; -webkit-overflow-scrolling: touch; }
+.mypdc-collage-scroll img { width: min(100%, 750px); height: auto; align-self: flex-start; }
+/* 生成合集图片时不显示“潜觉”占位框 */
+body.mypdc-capturing .team-latents .latents::before { content: none !important; display: none !important; }

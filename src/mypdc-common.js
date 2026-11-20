@@ -180,7 +180,7 @@ const MyPDC = (function () {
 	const isPhone = () => window.innerWidth <= 700;
 	function fitOne(node) {
 		node.style.zoom = '';
-		if (!isPhone() || node.offsetParent === null) return;
+		if (MyPDC.capturing || !isPhone() || node.offsetParent === null) return; // 生成图片时不缩放（html2canvas 不支持 zoom）
 		const W = document.documentElement.clientWidth;
 		const r = node.getBoundingClientRect();
 		const natural = Math.max(node.scrollWidth, r.width);
