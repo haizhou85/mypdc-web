@@ -579,3 +579,15 @@ window.addEventListener('load', () => setTimeout(() => {
 		}
 	}, true);
 })();
+
+// 原网站载入编队时把空位“0”读成了无效编号（不是 0），连续载入多个编队时空位会残留上一队的画面：当作空位处理
+(function () {
+	if (typeof Member === 'undefined' || !Member.prototype.loadObj) return;
+	const orig = Member.prototype.loadObj;
+	Member.prototype.loadObj = function (m, dataVersion) {
+		if (m === 0 || m === null || m === '0') m = undefined;
+		const r = orig.call(this, m, dataVersion);
+		if (this.id == null || Number.isNaN(this.id)) this.id = 0;
+		return r;
+	};
+})();

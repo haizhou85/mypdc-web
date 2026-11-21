@@ -825,3 +825,9 @@ body.mypdc-desk .mask { z-index: 1000 !important; }
 .mypdc-collage-scroll img { width: min(100%, 750px); height: auto; align-self: flex-start; }
 /* 生成合集图片时不显示“潜觉”占位框 */
 body.mypdc-capturing .team-latents .latents::before { content: none !important; display: none !important; }
+.mypdc-collage-stage { background: #fff; box-sizing: border-box; }
+.mypdc-collage-block { padding: 10px 8px 12px; border-top: 2px solid #e6dccf; }
+.mypdc-collage-block:first-child { border-top: none; }
+.mypdc-collage-head { display: flex; align-items: center; gap: 10px; height: 44px; margin-bottom: 6px; }
+.mypdc-collage-head canvas { width: 54px; height: 40px; flex: none; }
+.mypdc-collage-title { font-size: 22px; font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

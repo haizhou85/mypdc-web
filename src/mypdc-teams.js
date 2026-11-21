@@ -326,6 +326,30 @@
 		});
 		await Promise.all([...urls].map(u => new Promise(res => { const i = new Image(); i.onload = i.onerror = res; i.src = u; })));
 	}
+	// 徽章：底框和图案都是固定像素的贴图，直接切出来画（比 html2canvas 快）
+	const imgCache = new Map();
+	function loadImg(url) {
+		if (!imgCache.has(url)) imgCache.set(url, new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }));
+		return imgCache.get(url);
+	}
+	async function drawBadge(badge) {
+		const W = badge.offsetWidth || 102, H = badge.offsetHeight || 76;
+		const c = document.createElement('canvas');
+		c.width = W * 2; c.height = H * 2;
+		const g = c.getContext('2d');
+		g.scale(2, 2);
+		for (const cs of [getComputedStyle(badge), getComputedStyle(badge, '::before')]) {
+			const m = cs.backgroundImage.match(/url\("?([^")]+)"?\)/);
+			if (!m) continue;
+			const [px, py] = cs.backgroundPosition.split(' ').map(v => (v.endsWith('%') ? 0 : -parseFloat(v) || 0));
+			try {
+				const img = await loadImg(m[1]);
+				const w = parseFloat(cs.width) || W, h = parseFloat(cs.height) || H;
+				g.drawImage(img, px, py, w, h, 0, 0, w, h);
+			} catch (e) { /* 图片读不到就跳过 */ }
+		}
+		return c;
+	}
 	async function makeCollage() {
 		if (typeof html2canvas !== 'function' || typeof formation === 'undefined') return;
 		const list = [...picked.values()];
@@ -341,57 +365,58 @@
 		const scaler = document.querySelector('.mypdc-scale-inner');
 		const savedTransform = scaler?.style.transform;
 		if (scaler) scaler.style.transform = 'none';
-		const shots = [];
+		let stage = null;
 		try {
+			msg.textContent = '读取队伍…';
+			const fulls = await Promise.all(list.map(x => api(`/api/teams/${x.id}`)));
+			// 每载入一队就把“辅助、潜觉、队员”那块复制到临时区域，最后只截一次图
 			for (let i = 0; i < list.length; i++) {
-				msg.textContent = `生成中 ${i + 1} / ${list.length}…`;
-				const t = await api(`/api/teams/${list[i].id}`);
+				msg.textContent = `载入队伍 ${i + 1} / ${list.length}…`;
+				const t = fulls[i];
+				formation.loadObj(); // 先清空：原网站载入时遇到空位（0）不会清掉上一队的队员
 				formation.loadObj(t.data);
 				refreshAll(formation);
-				await sleep(150);
-				document.querySelectorAll('.formation-box, .formation-box [style*="zoom"]').forEach(n => { n.style.zoom = ''; });
+				// 等页面刷新完（部分头像是在下一轮才更新的），再复制
+				await new Promise(r => requestAnimationFrame(() => setTimeout(r, 60)));
 				const box = document.querySelector('.formation-box .team-bigbox .team-box');
+				await waitImages(box);
 				const badge = document.querySelector('.formation-box .team-bigbox .team-badge');
-				await waitImages(box); if (badge) await waitImages(badge);
-				const opt = { backgroundColor: '#ffffff', scale: 2, logging: false };
-				const boxCanvas = await html2canvas(box, opt);
-				const badgeCanvas = badge && Number(formation.teams[0][2]) ? await html2canvas(badge, { ...opt, backgroundColor: null }) : null;
-				shots.push({ t, boxCanvas, badgeCanvas });
-			}
-			msg.textContent = '拼图中…';
-			// 竖排，手机宽度（750 像素宽）
-			const W = 750, PAD = 16, HEAD = 64;
-			const scaled = shots.map(s => ({ ...s, h: Math.round(s.boxCanvas.height * (W - PAD * 2) / s.boxCanvas.width) }));
-			const H = scaled.reduce((a, s) => a + HEAD + s.h + PAD * 2, 0) + PAD;
-			const c = document.createElement('canvas');
-			c.width = W; c.height = H;
-			const g = c.getContext('2d');
-			g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
-			let y = PAD;
-			scaled.forEach((s, i) => {
-				if (i) { g.fillStyle = '#e6dccf'; g.fillRect(PAD, y - PAD, W - PAD * 2, 2); }
-				let x = PAD;
-				if (s.badgeCanvas) {
-					const bh = HEAD - 8, bw = Math.round(s.badgeCanvas.width * bh / s.badgeCanvas.height);
-					g.drawImage(s.badgeCanvas, x, y + 4, bw, bh);
-					x += bw + 12;
+				if (!stage) {
+					stage = el('div', { class: 'mypdc-collage-stage' });
+					stage.style.width = (box.offsetWidth + 16) + 'px'; // 每块左右各 8px 内边距
+					box.parentNode.append(stage);
 				}
-				g.fillStyle = '#333';
-				g.font = 'bold 28px system-ui, -apple-system, "PingFang SC", "Microsoft Yahei", sans-serif';
-				g.textBaseline = 'middle';
-				const title = s.t.title || `#${s.t.id}`;
-				let text = title;
-				while (g.measureText(text).width > W - PAD - x && text.length > 1) text = text.slice(0, -1);
-				g.fillText(text === title ? text : text.slice(0, -1) + '…', x, y + HEAD / 2);
-				y += HEAD;
-				g.drawImage(s.boxCanvas, PAD, y, W - PAD * 2, s.h);
-				y += s.h + PAD * 2;
-			});
+				const head = el('div', { class: 'mypdc-collage-head' });
+				if (badge && Number(formation.teams[0][2])) head.append(await drawBadge(badge));
+				head.append(el('span', { class: 'mypdc-collage-title' }, t.title || `#${t.id}`));
+				stage.append(el('div', { class: 'mypdc-collage-block' }, head, box.cloneNode(true)));
+			}
+			msg.textContent = '生成图片…';
+			document.querySelectorAll('.formation-box, .formation-box [style*="zoom"]').forEach(n => { n.style.zoom = ''; });
+			await waitImages(stage);
+			const only = target => node => node !== document.body && document.body.contains(node) && !node.contains(target) && !target.contains(node);
+			// 每队分别截图（只复制这一块，跳过页面其他元素）；输出宽 750（手机宽度）
+			const W = 750;
+			const blocks = [...stage.children];
+			const scale = W / stage.offsetWidth;
+			const shots = [];
+			for (let i = 0; i < blocks.length; i++) {
+				msg.textContent = `生成图片 ${i + 1} / ${blocks.length}…`;
+				shots.push(await html2canvas(blocks[i], { backgroundColor: '#ffffff', scale, logging: false, imageTimeout: 8000, ignoreElements: only(blocks[i]) }));
+			}
+			const c = document.createElement('canvas');
+			c.width = W; c.height = shots.reduce((a, x) => a + Math.round(x.height * W / x.width), 0);
+			const g = c.getContext('2d');
+			g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height);
+			let y = 0;
+			shots.forEach(x => { const h = Math.round(x.height * W / x.width); g.drawImage(x, 0, y, W, h); y += h; });
 			const blob = await new Promise(r => c.toBlob(r, 'image/png'));
 			showCollage(URL.createObjectURL(blob), list.length);
 		} catch (e) {
 			window.alert('生成失败：' + e.message); // eslint-disable-line no-alert
 		} finally {
+			stage?.remove();
+			formation.loadObj();
 			formation.loadObj(saved);
 			refreshAll(formation);
 			if (scaler) scaler.style.transform = savedTransform || '';
